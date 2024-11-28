@@ -6,13 +6,6 @@ print(type(router))
 app.include_router(router)
 
 
-@app.get("/")
-
-def read():
-
-    
-    return {"message": "this is the home page"}
-
 
 if __name__ == "__main__":
 
