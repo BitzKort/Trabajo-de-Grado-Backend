@@ -1,7 +1,7 @@
 from fastapi import FastAPI,  APIRouter  
 from src.Routers.userRouters import router
 
-app = FastAPI()
+app = FastAPI(title ="Ogloc")
 print(type(router))
 app.include_router(router)
 
