@@ -3,10 +3,11 @@ version: '3.8'
 services:
   web:
     build: .
-    container_name: ogloc
+    container_name: oglocApp
     ports:
-      - "8000:8000"  # Mapea el puerto 8000 del contenedor al puerto 8000 del host
+      - "8000:8000" 
     volumes:
-      - .:/app  # Mapea el directorio actual al directorio /app en el contenedor (para desarrollo)
+      - .:/app  
     environment:
-      - ENV=development  # Puedes establecer variables de entorno aquí
+      - ENV=development
+
