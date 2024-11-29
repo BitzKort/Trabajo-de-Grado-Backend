@@ -10,6 +10,7 @@ sqlalchemy = "*"
 psycopg2-binary = "*"
 pydantic = {extras = ["email"], version = "*"}
 python-dotenv = "*"
+sentence-transformers = "*"
 
 [dev-packages]
 
