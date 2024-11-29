@@ -16,3 +16,4 @@ __pycache__/
 # Archivos de configuración de entornos
 *.env
 *.env.*
+.env.**
