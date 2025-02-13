@@ -17,3 +17,8 @@ __pycache__/
 *.env
 *.env.*
 .env.**
+
+#Carpeta de modelos de ia
+/nplModules*
+
+
