@@ -25,6 +25,7 @@ starlette = "==0.41.3"
 typing-extensions = "==4.12.2"
 uvicorn = "==0.32.1"
 bcrypt = "*"
+asyncpg = "*"
 
 [dev-packages]
 

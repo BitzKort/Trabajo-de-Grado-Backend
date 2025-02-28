@@ -14,11 +14,5 @@ async def read_users():
     return [{"username": "Miguel"}, {"username":"aaaa"}]
 
 
-@userRouter.post("/create/", response_model=userSchema.UserCreate)
-def create_user(user: userSchema.UserCreate, db: Session = Depends(get_db)):
-    db_user = userModel.user(**user.model_dump())
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
+
 

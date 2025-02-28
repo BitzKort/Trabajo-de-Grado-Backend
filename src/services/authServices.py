@@ -1,48 +1,43 @@
-import bycript
-from src.Repository.auth import emailCkeck, getPassword
-from src.Repository.auth import registerUser
+import bcrypt
+from src.Repository.auth import createUserRepository
+
+from src.Repository.auth import emailCheck
+from fastapi import HTTPException
 
 
+def crypt(password: str) -> str:
 
-def crypt(password):
-
-    pass
+    salt = bcrypt.gensalt()  
+    hashed_password = bcrypt.hashpw(password.encode(), salt)  
+    return hashed_password.decode()
+    
 
 def checkCrypt(password, passwordb):
 
-    if bycript.checkpw(password.encode(), passwordb):
+    response = bcrypt.checkpw(password, passwordb)
 
-        return True
-    else:
-        return False
-
-def authLoguin(userData):
-    
-    userPass = userData.password
-
-
-    #check if the email exist in order to get the password
-    if emailCkeck(userData.email):
-
-        passdb = getPassword(userData.email)
-
-        if crypt(userPass, passdb):
-
-            return True
-        
-        else:
-
-            return False
-    else:
-        return False
-
-def createUser(userData):
-
-    #just register the user data to the database
-
-    passwordHashed = crypt(userData.password)
-
-    response = registerUser(userData)
+    print(response)
 
     return response
 
+async def authLoguin(userData):
+
+    #check if the email exist in order to get the password
+    password = await emailCheck(userData.email)
+    
+    return checkCrypt(userData.password.encode('utf-8'), password.encode('utf-8'))
+
+async def createUserService(userData):
+
+    print("entra a services")
+
+    hashedPassword = crypt(userData.password)
+
+    userData.password = hashedPassword
+
+    return await createUserRepository(userData)
+
+
+
+        
+            
