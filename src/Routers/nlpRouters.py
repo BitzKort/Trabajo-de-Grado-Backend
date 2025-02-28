@@ -9,7 +9,6 @@ modules_path = './nplModules'
 gpt_path = os.path.join(modules_path, 'gpt2')
 stb_path = os.path.join(modules_path, 'stb')
 question_path = os.path.join(modules_path,'QAGen')
-print(stb_path)
 os.makedirs(modules_path, exist_ok=True)
 os.makedirs(gpt_path, exist_ok=True)
 os.makedirs(stb_path, exist_ok=True)
@@ -29,16 +28,28 @@ class SentenceRequest(BaseModel):
 async def question():
 
     #save the models
+
+    #text generation
     generator = pipeline('text-generation', model='gpt2-medium')
 
     generator.model.save_pretrained(gpt_path)
     generator.tokenizer.save_pretrained(gpt_path)
 
 
+
+    #
+
+
+
+
+
+    #Answers distractor (but just wrong answers)
     qAGenerator = pipeline("text2text-generation", model="potsawee/t5-large-generation-race-Distractor")
 
     qAGenerator.model.save_pretrained(question_path)
     qAGenerator.tokenizer.save_pretrained(question_path)
+
+    #
 
     
 
@@ -68,19 +79,10 @@ async def question():
 
     # Procesar para obtener pregunta y respuesta
     question_answer = question_answer.replace(questionTokenizer.pad_token, "").replace(questionTokenizer.eos_token, "")
-    question, answer = question_answer.split(questionTokenizer.sep_token)
-
-    print(question)
-    print(answer)
-
-
-
-
-
-
-
-
     
+
+    return {"text": question_answer }
+
 
 @nlpRouter.post('/Semantic_similarity')
 async def model(request: SentenceRequest):

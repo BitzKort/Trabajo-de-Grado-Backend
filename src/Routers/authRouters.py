@@ -10,8 +10,8 @@ async def login():
 
     pass
 
-@authRouter.post('/login')
+@authRouter.post('/register')
 
-async def login():
+async def register():
 
     pass
