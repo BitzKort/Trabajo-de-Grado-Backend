@@ -1,17 +1,20 @@
 from fastapi import APIRouter, HTTPException
 from loguru import logger
 
-from schemas.nplSchemas import Something
-from services.nplServices import getText
+from schemas.nplSchemas import QuestionCardResponse
+from services.nplServices import getText, getQuestion
 
 nplRouter = APIRouter()
 
 
-@nplRouter.get("/getQuestionCard", response_model=Something)
+@nplRouter.get("/getQuestionCard", response_model=QuestionCardResponse)
 
 
-async def TextForNow() -> Something:
+async def TextForNow() -> QuestionCardResponse:
 
-    response = await getText()
+    text = await getText()
+
+    question = await getQuestion(text)
+
 
     return response

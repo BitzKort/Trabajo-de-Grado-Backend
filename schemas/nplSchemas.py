@@ -3,9 +3,10 @@ from pydantic import BaseModel
 
 #schemas for router responses
 
-class Something(BaseModel):
+class QuestionCardResponse(BaseModel):
 
     text:str
+    question:str
 
 
 
