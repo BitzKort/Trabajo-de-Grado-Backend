@@ -1,5 +1,5 @@
 import os
-from schemas.nplSchemas import Something
+from schemas.nplSchemas import QuestionCardResponse
 from sentence_transformers import CrossEncoder
 from transformers import pipeline, set_seed, AutoModelForCausalLM, AutoTokenizer, AutoModelForSeq2SeqLM
 from loguru import logger
@@ -7,73 +7,40 @@ from loguru import logger
 
 pln_models = {}
 
-async def init_Folders():
-
-    logger.warning("creating the folder for the models")
-
-    modules_path = './nplModules'
-    gpt_path = os.path.join(modules_path, 'gpt2')
-    race_path = os.path.join(modules_path, 'Q&A-RACE')
-    squad_path = os.path.join(modules_path,'Q&A-SQUAD')
-    stsb_path = os.path.join(modules_path="Stsb")
-    os.makedirs(modules_path, exist_ok=True)
-    os.makedirs(gpt_path, exist_ok=True)
-    os.makedirs(race, exist_ok=True)
-    os.makedirs(squad, exist_ok=True)
-    os.makedirs(stsb, exist_ok=True)
-
-    logger.success("folders created")
-
-    await init_models(gpt_path, race_path, squad_path, stsb_path)
 
 async def init_models(gpt_path, race_path, squad_path, stsb_path ):
 
 
     global pln_models
 
-    logger.warning("Download the models")
-
-
-    #Model for text generation (experimental)
-    textGenerator = pipeline('text-generation', model='gpt2-medium')
-
-    #Model for question and answers in an abstractive form (potsawee/t5-large-generation-race-QuestionAnswer)
-
-    raceQAGenerator = pipeline("text2text-generation", model="potsawee/t5-large-generation-race-Distractor")
-
-    #Model for question and answers in an extractive form (potsawee/t5-large-generation-squad-QuestionAnswer)
-
-    squadQAGenerator = pipeline("text2text-generation", model = "potsawee/t5-large-generation-squad-QuestionAnswer")
-
-    #Model for semantic similarity "compare the user/model answers with an attention model" (cross-encoder/stsb-roberta-base)
-
-    logger.warning("Saving models")
-    
-    
-    #For gpt model
-    textGenerator.model.save_pretrained(gpt_path)
-    textGenerator.tokenizer.save_pretrained(gpt_path)
-
-    #For race-t5 model (Abstractive)
-    raceQAGenerator.model.save_pretrained(race_path)
-    raceQAGenerator.tokenizer.save_pretrained(race_path)
-
-    #For squad-t5 model (extractive)
-    squadQAGenerator.model.save_pretrained(squad_path)
-    squadQAGenerator.tokenizer.save_pretrained(squad_path)
-
-
-
-
     logger.warning("init models")
 
-    model = AutoModelForCausalLM.from_pretrained(gpt_path)
-    tokenizer = AutoTokenizer.from_pretrained(gpt_path)
-    gptGenerator = pipeline('text-generation', model=model, tokenizer=tokenizer, device=1)
+    
+    #init the gpt2 model
+    gptModel = AutoModelForCausalLM.from_pretrained(gpt_path)
+    GptTokenizer = AutoTokenizer.from_pretrained(gpt_path)
+    gptGenerator = pipeline('text-generation', model=gptModel, tokenizer=GptTokenizer, device=0)
 
     pln_models["gptGenerator"] = gptGenerator
 
-    logger.success("all models ok")
+    logger.success("gpt model ok")
+
+    #init the race model
+    raceModel = AutoModelForSeq2SeqLM.from_pretrained(race_path)
+    raceTokenizer = AutoTokenizer.from_pretrained(race_path)
+    raceGenerator = pipeline("text2text-generation", model=raceModel, tokenizer=raceTokenizer, device=0)
+
+    pln_models["raceGenerator"] = raceGenerator
+
+    logger.success("race-genetarion model ok")
+
+        #init the race model
+    squadModel = AutoModelForSeq2SeqLM.from_pretrained(squad_path)
+    squadTokenizer = AutoTokenizer.from_pretrained(squad_path)
+    squadGenerator = pipeline("text2text-generation", model=squadModel, tokenizer=squadTokenizer, device=0)
+
+    pln_models["squadGenerator"] = squadGenerator
+
 
 
 
@@ -82,11 +49,36 @@ async def getText():
     generator = pln_models["gptGenerator"]
 
     set_seed(42)
-    results = generator("The tennis shoes have a range of prices.", max_length=60, num_return_sequences=2)
+    textGenerated = generator("A woman is slicing tomato.", max_length=100, truncation = True, num_return_sequences=1)[0]['generated_text']
 
-    return Something(text= results[0]['generated_text'])
+    return textGenerated
+    
 
-async def getQuestion(text):
+import re
+async def getQuestion(text) -> QuestionCardResponse:
 
-    pass
+    raceGenerator = pln_models["raceGenerator"]
+
+    response = raceGenerator(text,max_length=100, truncation=True)[0]['generated_text']
+
+
+    print(response)
+
+    response = re.split(r"(?<=[?_])", response)
+
+    return QuestionCardResponse(text=text, question=response[0], answer= response[1])
+
+
+async def getQuestionSQUAD(text) ->QuestionCardResponse:
+
+    squadGenerator = pln_models["squadGenerator"]
+
+    response = squadGenerator(text, max_length=100, truncation=True)[0]['generated_text']
+
+    response = re.split(r"(?<=[?_])", response)
+
+    return QuestionCardResponse(text=text, question=response[0], answer= response[1])
+
+
+    
 

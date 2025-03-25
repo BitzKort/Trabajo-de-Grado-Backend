@@ -3,18 +3,20 @@ from loguru import logger
 
 from schemas.nplSchemas import QuestionCardResponse
 from services.nplServices import getText, getQuestion
+from typing import List
+
+
 
 nplRouter = APIRouter()
-
 
 @nplRouter.get("/getQuestionCard", response_model=QuestionCardResponse)
 
 
-async def TextForNow() -> QuestionCardResponse:
+async def QuestionGenerator() -> QuestionCardResponse:
 
     text = await getText()
 
-    question = await getQuestion(text)
+    questionCard = await getQuestion(text)
 
 
-    return response
+    return questionCard

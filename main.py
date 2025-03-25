@@ -6,14 +6,23 @@ from routes.lessonsRouter import lessonsRouter
 from routes.rankingRoutes import rankingRouter
 from routes.nplRouter import nplRouter
 from repository.db import init_postgres, close_postgres
-from services.nplServices import init_Folders
+from services.nplServices import init_models
 import uvicorn
+import dotenv
+import os
+
+dotenv.load_dotenv(dotenv_path=".env")
+
+gpt_path = os.getenv("GPT2_PATH")
+race_path = os.getenv("RACE_PATH")
+squad_path = os.getenv("SQUAD_PATH")
+stsb_path = os.getenv("STSB_PATH")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 
     await init_postgres()
-    await init_Folders()
+    await init_models(gpt_path, race_path, squad_path, stsb_path )
     yield
     await close_postgres()
 

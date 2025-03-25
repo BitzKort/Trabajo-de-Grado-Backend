@@ -7,6 +7,7 @@ class QuestionCardResponse(BaseModel):
 
     text:str
     question:str
+    answer:str
 
 
 
