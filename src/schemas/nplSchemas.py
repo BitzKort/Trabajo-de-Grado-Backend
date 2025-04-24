@@ -10,7 +10,11 @@ class QuestionCardResponse(BaseModel):
     answer:str
 
 
+class SentenceCompareResponse(BaseModel):
 
+    sentenceNlp: str
+    sentenceUser:str
+    score: str
 
 #schemas for inner validations
 

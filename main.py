@@ -55,9 +55,9 @@ app.add_middleware(
 
 def home ():
 
-    return {"msg":"hola, esto es una prueba"}
+    return {"msg":"Ogloc server started"}
 
 
 if __name__ == "__main__":
 
-    uvicorn.run(app, host="localhost", port=800)
+    uvicorn.run(app, host="localhost", port=8000)

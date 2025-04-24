@@ -1,12 +1,18 @@
 import os
-from schemas.nplSchemas import QuestionCardResponse
+from schemas.nplSchemas import QuestionCardResponse, SentenceCompareResponse
 from sentence_transformers import CrossEncoder
-from transformers import pipeline, set_seed, AutoModelForCausalLM, AutoTokenizer, AutoModelForSeq2SeqLM
+from transformers import pipeline, set_seed, AutoModelForCausalLM, AutoTokenizer, AutoModelForSeq2SeqLM, AutoModel
 from loguru import logger
-
+import re
+import dotenv
 
 pln_models = {}
 
+
+
+dotenv.load_dotenv(dotenv_path=".env")
+
+stsb_path = os.getenv("STSB_PATH")
 
 async def init_models(gpt_path, race_path, squad_path, stsb_path ):
 
@@ -40,7 +46,13 @@ async def init_models(gpt_path, race_path, squad_path, stsb_path ):
     squadGenerator = pipeline("text2text-generation", model=squadModel, tokenizer=squadTokenizer, device=0)
 
     pln_models["squadGenerator"] = squadGenerator
+    
+    logger.success("squad-genetarion model ok")
 
+
+    #init the stsb model
+
+    logger.success("stsb model ok")
 
 
 
@@ -54,8 +66,8 @@ async def getText():
     return textGenerated
     
 
-import re
-async def getQuestion(text) -> QuestionCardResponse:
+
+async def getQuestionRACE(text) -> QuestionCardResponse:
 
     raceGenerator = pln_models["raceGenerator"]
 
@@ -80,5 +92,11 @@ async def getQuestionSQUAD(text) ->QuestionCardResponse:
     return QuestionCardResponse(text=text, question=response[0], answer= response[1])
 
 
+async def compareAnswer(SentenceNlp) -> SentenceCompareResponse:
+
+    stsb_model = CrossEncoder(model_name="nplModules\Stsb\models--cross-encoder--stsb-roberta-base\snapshots\d576534b67143e2c70ee9966d7fdbf5835728d13")
+
+    predict = str(stsb_model.predict((SentenceNlp, "hi, how are you")))
     
+    return SentenceCompareResponse(sentenceNlp=SentenceNlp, sentenceUser= "hi, how are you", score=predict)
 

@@ -5,6 +5,11 @@ env/
 ENV/
 .ENV/
 
+
+#Carpeta del dataset
+/dataset
+/dataset*
+
 # Archivos creados por el intérprete de Python
 *.pyc
 *.pyo
