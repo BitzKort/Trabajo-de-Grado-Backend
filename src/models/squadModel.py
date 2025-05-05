@@ -23,10 +23,10 @@ class SquadModel():
 
         self.squad_path = os.getenv("SQUAD_PATH")
 
-        self.model = AutoModelForSeq2SeqLM(self.squad_path)
-        self.tokenizer = AutoTokenizer(self.squad_path)
+        self.model = AutoModelForSeq2SeqLM.from_pretrained(self.squad_path)
+        self.tokenizer = AutoTokenizer.from_pretrained(self.squad_path)
 
-        self.generator = pipeline("text2text-generation", self.model, self.tokenizer)
+        self.generator = pipeline("text2text-generation", model = self.model, tokenizer= self.tokenizer, device_map="auto")
     
     def genrateQA(self, text: str):
 

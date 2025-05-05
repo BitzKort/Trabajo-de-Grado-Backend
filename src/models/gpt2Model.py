@@ -18,17 +18,19 @@ class Gpt2Model:
     def _loadModel(self):
 
         dotenv.load_dotenv(dotenv_path=".env")
-        self.gpt_path = os.getenv("GPT2_PATH")
+        gpt_path = os.getenv("GPT2_PATH")
 
-        self.model  = AutoModelForCausalLM.from_pretrained(self.gpt_path)
-        self.tokenizer = AutoTokenizer.from_pretrained(self.gpt_path)
+        print(gpt_path)
 
-        self.generator = pipeline( 'text-generation', self.model, self.tokenizer, device=0 if torch.cuda.is_available() else -1)
+        self.model  = AutoModelForCausalLM.from_pretrained(gpt_path)
+        self.tokenizer = AutoTokenizer.from_pretrained(gpt_path)
+
+        self.generator = pipeline( 'text-generation', model = self.model, tokenizer= self.tokenizer, device_map="auto")
 
     def genetateText(self, base_text: str, max_length: int = 200) ->str:
 
         set_seed(40)
-        response = self.generator(base_text, max_length, truncation = True, num_return_sequences=1)[0]["generated_text"]
+        response = self.generator(base_text, max_length =max_length, truncation = True, num_return_sequences=1)[0]["generated_text"]
         logger.success("gpt2 text generated")
 
         return response

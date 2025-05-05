@@ -1,13 +1,17 @@
 from pydantic import BaseModel
-
+from typing import List
 
 #schemas for router responses
 
+class Question(BaseModel):
+
+    question:str
+
 class QuestionCardResponse(BaseModel):
 
+    title:str
     text:str
-    question:str
-    answer:str
+    Questions: List[Question]
 
 
 class SentenceCompareResponse(BaseModel):

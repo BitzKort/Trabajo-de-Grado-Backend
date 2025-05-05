@@ -25,7 +25,7 @@ class RaceModel:
         self.model = AutoModelForSeq2SeqLM.from_pretrained(self.race_path)
         self.tokenizer = AutoTokenizer.from_pretrained(self.race_path)
 
-        self.generator = pipeline("text2text-generation", self.model, self.tokenizer, device= 0 if torch.cuda.is_available() else -1)
+        self.generator = pipeline("text2text-generation", model= self.model, tokenizer= self.tokenizer, device_map="auto")
 
     def genarteQA(self, text: str):
 

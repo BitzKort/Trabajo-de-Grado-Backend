@@ -1,22 +1,87 @@
-from celery_app import celery
+import os
+import dotenv
+import random
+import json
+from src.task.celery_app import celery
+from src.models.gpt2Model import Gpt2Model
+from src.models.raceModel import RaceModel
+from src.models.squadModel import SquadModel
+from src.schemas.nplSchemas import QuestionCardResponse, Question
+from typing import List
+from loguru import logger
+from celery import group, chord
+from datasets import load_from_disk
+from tsidpy import TSID
 
+dotenv.load_dotenv(".env")
+
+
+data_path = os.getenv("DATASPLIT_PATH")
+
+
+#1. server rest -> front react
+#1.1. neondb
+#2. redis lecciones
+#3. celery
+
+#Este metodo genera un dict con id, url, titulo y texto
+def getDatasetText(dataset) -> list:
+    
+    randomId = random.sample(range(1,205328),2)
+
+    sample_text = list(map(lambda x: dataset[x],randomId))
+
+    return sample_text
 
 @celery.task
+def generate_lesson(dict_text) -> str:
 
+    gpt2 = Gpt2Model()
+    raceQA = RaceModel()
+    scuadQA = SquadModel()
+
+
+    sample_text = dict_text["text"]
+
+    logger.warning("a lesson is generating")
+
+    final_text = gpt2.genetateText(sample_text)
+
+    qa_race = raceQA.genarteQA(final_text)
+
+    qa_squad = scuadQA.genrateQA(final_text)
+
+    response = (QuestionCardResponse(title=dict_text["title"], text=final_text, Questions=[Question(question= qa_race), Question(question= qa_squad)]))
+
+    logger.success("leccion generada")
+
+    return response.model_dump_json()
+
+@celery.task(bind=True)
+def save_on_dbs(self, results):
+
+    redis = self.backend.client
+
+    data_json = json.dumps(results, ensure_ascii=False)
+
+    timestamp = str(TSID.create())
+    key = f"lessons:batch:{timestamp}"
+
+    redis.set(key, data_json)
+
+    return {"stored_key": key, "count": len(results)}
+    
+
+@celery.task
 def generate_lessons():
 
-    for _ in range(10):
+    dataset = load_from_disk(data_path)
+   
 
-        #pasos para tener el generador:
-            #1. metodo en servicios para brindar un texto de ejemplo random del dataset
-            # 2. pasar el texto a gpt2
-            # 3. pasar el texto generado a los modelos de preguntas
-            # 4. Enviar a redis como k/v y a postgres como el esquema de tabla que tiene
-            # 5. hacer pruebas de cada 10 min y verificar que se generen todas las 10 lecciones en ese plazo 
-            # 6. no se que mas si alguien ve esto se gana el baloto. 
-        get_text_set = "aqui va el texto de ejemplo del dataset"
-        generated_text = "hi"
-        race_response ="hi"
-        squad_response ="Hi"
+    sample_text = getDatasetText(dataset)
 
-        #logica para guardar las lecciones
+
+    jobs = [generate_lesson.s(dict_text) for dict_text in sample_text]
+
+
+    chord(jobs)(save_on_dbs.s())
