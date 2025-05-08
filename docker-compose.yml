@@ -1,0 +1,40 @@
+
+volumes:
+  modelos_npl:
+    driver: local
+
+services:
+  redis:
+    container_name: redisCache
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+
+  fastapi:
+    container_name: OglocBackend
+    build:
+      context: ./fastAPI
+      dockerfile: Dockerfile
+    command: bash -c "python -m uvicorn main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+
+    env_file:
+      - .env
+    depends_on:
+      - redis
+
+  celery_all_services:
+    container_name: celery_Server
+    build:
+      context: ./celeryBackend
+      dockerfile: celery.worker.Dockerfile
+    volumes:
+      - modelos_npl:/app/models
+    ports:
+      - "5555:5555"
+    env_file:
+      - .env
+    depends_on:
+      - redis

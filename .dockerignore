@@ -1,0 +1,34 @@
+# .dockerignore
+
+# Ignorar entorno virtual
+venv/
+env/
+.venv/
+celeryBackend/celery
+
+#Ignorar modelos y dataset (volumen aparte)
+celeryBackend/dataset
+celeryBackend/dataset*
+celeryBackend/nplModules
+
+# Ignorar archivos de git
+.git/
+.gitignore
+
+# Ignorar archivos de IDE
+.vscode/
+.idea/
+
+# Ignorar cache de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+.env
+*.env.local
+
+# Ignorar archivos de desarrollo
+docker-compose.override.yml
+docker-compose.yml
+Dockerfile.dev
