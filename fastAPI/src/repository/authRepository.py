@@ -1,10 +1,10 @@
 from fastapi import Depends, HTTPException
 from loguru import logger
-from repository.db import get_postgres
+from src.repository.db import get_postgres
 import asyncpg
 from tsidpy import TSID
 
-from schemas.userSchema import EmailCheckerResponse, userNameResponse
+from src.schemas.userSchema import EmailCheckerResponse, userNameResponse
 
 async def emailCheckerRepository(email, dbconect) -> str:
 

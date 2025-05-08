@@ -4,7 +4,7 @@ import dotenv
 from loguru import logger
 from typing import Optional
 
-dotenv.load_dotenv(dotenv_path=".env")
+dotenv.load_dotenv(dotenv_path="../.env.prod")
 
 conn_pool: Optional[asyncpg.Pool] = None
 

@@ -2,7 +2,7 @@ from celery import Celery
 import os
 import dotenv
 
-dotenv.load_dotenv(dotenv_path="../.env")
+dotenv.load_dotenv(dotenv_path="../.env.prod")
 
 
 celery = Celery(

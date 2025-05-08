@@ -11,7 +11,7 @@ import uvicorn
 import dotenv
 import os
 
-dotenv.load_dotenv(dotenv_path=".env")
+dotenv.load_dotenv(dotenv_path="../.env.prod")
 
 stsb_path = os.getenv("STSB_PATH")
 

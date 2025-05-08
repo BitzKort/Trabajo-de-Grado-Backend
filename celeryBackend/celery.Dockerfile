@@ -10,10 +10,3 @@ RUN pip install --no-cache-dir -r celery_requirements.txt
 
 # Copia el resto del código de la aplicación
 COPY . .
-
-COPY docker_commands.sh .
-
-RUN chmod +x docker_commands.sh
-
-CMD ["./docker_commands.sh"]
-

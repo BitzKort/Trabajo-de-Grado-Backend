@@ -6,7 +6,7 @@ import re
 import dotenv
 
 
-dotenv.load_dotenv(dotenv_path=".env")
+dotenv.load_dotenv(dotenv_path="../.env.prod")
 
 stsb_path = os.getenv("STSB_MODEL_PATH")
 

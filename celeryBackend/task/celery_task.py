@@ -13,7 +13,7 @@ from celery import group, chord
 from datasets import load_from_disk
 
 
-dotenv.load_dotenv(dotenv_path="../.env")
+dotenv.load_dotenv(dotenv_path="../.env.prod")
 
 
 data_path = os.getenv("DATASPLIT_PATH")

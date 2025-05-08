@@ -25,7 +25,7 @@ class StsbModel():
     
     def _loadModel(self):
 
-        dotenv.load_dotenv(".env")
+        dotenv.load_dotenv(dotenv_path="../.env.prod")
 
         stsb_path = os.getenv("STSB_MODEL_PATH")
 

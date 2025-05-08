@@ -22,7 +22,7 @@ class Gpt2Model:
 
     def _loadModel(self):
 
-        dotenv.load_dotenv(dotenv_path=".env")
+        dotenv.load_dotenv(dotenv_path="../.env.prod")
         self.gpt_path = os.getenv("GPT2_PATH")
 
          # Verifica si la ruta existe
