@@ -1,54 +1,48 @@
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, status
 from loguru import logger
-from src.repository.db import get_postgres
 import asyncpg
 from tsidpy import TSID
 
-from src.schemas.userSchema import EmailCheckerResponse, userNameResponse
+from src.schemas.authSchemas import EmailCheckerResponse, RegisterValidation
 
-async def emailCheckerRepository(email, dbconect) -> str:
+async def emailCheckerRepository(email, dbConect: asyncpg.Pool) -> str:
 
     query = "SELECT id, password FROM users WHERE email = $1;"
 
     try:
-        async with dbconect.acquire() as conn:
+        async with dbConect.acquire() as conn:
 
             result = await conn.fetchrow(query,email)
 
             if result:
 
-                response = EmailCheckerResponse(**dict(result))
+                userData = EmailCheckerResponse(**dict(result))
 
-                
-
-                return response
+                return userData
             
             else:
 
                 logger.warning("user {} not found".format(email))
 
-                raise HTTPException(
-                    status_code=500, detail="user not found"
-                )
     except Exception as e:
 
         logger.warning(f"Error fetching user {e}")
 
         raise HTTPException(
-            status_code=500, detail="Internal server error during the user auth"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error during the user auth"
         )
 
-async def createUserRepository(userData, dbconect):
+async def createUserRepository(userData, dbConect: asyncpg.Pool) -> RegisterValidation:
 
     id = str(TSID.create())
 
-    query ="INSERT INTO users (id, name, username, email, password) VALUES (($1)::text, $2, $3, $4, $5);"
+    query ="INSERT INTO users (id, name, username, email, password) VALUES (($1)::text, $2, $3, $4, $5) RETURNING id AS userid;"
 
 
     try: 
-        async with dbconect.acquire() as conn:
+        async with dbConect.acquire() as conn:
 
-            await conn.fetchrow(
+           new_user = await conn.fetchrow(
                 query,
                 id,
                 userData.name,
@@ -56,15 +50,13 @@ async def createUserRepository(userData, dbconect):
                 userData.email,
                 userData.password
             )
+                      
+           user = RegisterValidation(**dict(new_user))
+           
+           logger.success("user created")
 
-            logger.success("usuario creado exitosamente")
+           return user 
 
-            return {"msg": "usuario creado exitosamente"}
-
-            
-
-            
-            
     except Exception as e:
         logger.error(f"Error on insert user: {e}")
 

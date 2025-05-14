@@ -1,37 +1,40 @@
 
 from loguru import logger
-from fastapi import HTTPException
-from src.schemas.userSchema import UserInfoResponse
-from src.repository.userRepository import getUserName
+from fastapi import HTTPException, status, Depends
+from datetime import date, timedelta
+from src.schemas.userSchema import UserInfoResponse, UserInfoEntry
+from src.repository.userRepository import getUserName, getUserInfo, update_strike
+from src.repository.db import get_postgres
+from src.services.authServices import get_current_user
 
-async def userInfoService(id, db):
+async def userInfo(userData: UserInfoEntry = Depends(), token:str = Depends(get_current_user), dbConnect = Depends(get_postgres)) -> UserInfoResponse:
 
-    print(id)
-    print(type(id))
 
-    logger.warning("entra al router info services")
+    userInfoResult = await getUserInfo(userData.id, dbConnect)
 
+    if not userInfoResult:
+
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Something happend getting the user info")
+
+    else:
+
+        return userInfoResult, dbConnect
     
-    query =" SELECT u.name, u.username, r.exp, r.dias,  DENSE_RANK() OVER (ORDER BY r.exp DESC) AS ranking FROM racha r INNER JOIN users u ON r.id = u.id WHERE u.id = $1;"
 
-    try:
+async def verify_streak(userInfo, dbConnect ):
 
-        async with db.acquire() as conn:
+    today = date.today()
+    if not userInfo.last_activity_date == today:
+        #si no es hoy es pq falta por hacer al menos una leccion
 
-            response = await conn.fetchrow(query, id)
+        # si no es hoy y no tiene tiempo de 1 dia, se reinicia
+        if not userInfo.last_activity_date == today - timedelta(days=1):
 
-            r1 = UserInfoResponse(**dict(response))
+            userInfo.streak_count = 1
+            userInfo.last_activity_date = today
 
-            logger.info("respuesta del ranking: {}".format(r1))
-
-            return r1
-        
-    except Exception as e:
-
-        response = await getUserName(id, db)
-
-        logger.warning(response)
-
-        return UserInfoResponse(name=response.name, username=response.username, exp=0, dias=0, ranking=0)
+            await update_strike(userInfo, dbConnect)
+    
+    return userInfo
 
     

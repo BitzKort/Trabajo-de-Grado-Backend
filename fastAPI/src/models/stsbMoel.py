@@ -25,8 +25,6 @@ class StsbModel():
     
     def _loadModel(self):
 
-        dotenv.load_dotenv(dotenv_path="../.env.prod")
-
         stsb_path = os.getenv("STSB_MODEL_PATH")
 
         self.generator = CrossEncoder(model_name=stsb_path)

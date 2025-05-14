@@ -1,14 +1,13 @@
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from src.repository.db import get_postgres
-from src.schemas.userSchema import User, Login, Register, LoginResponse, UserInfoResponse, UserInfoEntry
+from src.schemas.userSchema import User, UserInfoResponse, UserInfoEntry
 from typing import List, Annotated
 import asyncpg
 from loguru import logger
 
-from src.services.authServices import authLogin, createUserService
-
-from src.services.userServices import userInfoService
+from src.services.authServices import get_current_user
+from src.services.userServices import userInfo, verify_streak
 
 
 userRouter = APIRouter()
@@ -16,7 +15,7 @@ userRouter = APIRouter()
 
 
 @userRouter.get("/getUsers", response_model=List[User])
-async def test(dbConect: asyncpg.Pool = Depends(get_postgres)) -> List[User]:
+async def test(dbConect: asyncpg.Pool = Depends(get_postgres), token:str = Depends(get_current_user)) -> List[User]:
 
 
     query = "SELECT * from users;"
@@ -34,46 +33,15 @@ async def test(dbConect: asyncpg.Pool = Depends(get_postgres)) -> List[User]:
         raise HTTPException(status_code=500, detail="Failed to retrieve products")
 
 
-@userRouter.post("/loginUser", response_model=LoginResponse)
-async def login(user: Login, dbConect: asyncpg.Pool = Depends(get_postgres))->LoginResponse:
-
-
-    response = await authLogin(user, dbConect)
-
-    if not response:
-
-        raise HTTPException (status_code=404, detail="usuario no encontrado")
-    
-    return response
-
-@userRouter.post("/register")
-
-async def register(userData:Register, dbConect: asyncpg.Pool = Depends(get_postgres)):
-
-    response = await createUserService(userData, dbConect)
-
-    if not response:
-
-        logger.error("something went wrong at creating user")
-
-        raise HTTPException (status_code=500, detail="error durante el registro")
-    
-    else:
-        return response
-
 
 @userRouter.post("/userInfo", response_model=UserInfoResponse)
+async def getUserInfo(id: Annotated[UserInfoEntry, Query(...)], user_data: UserInfoResponse = Depends(userInfo))-> UserInfoResponse:
 
-async def userInfo(id: Annotated[str, Query(...)], db: asyncpg = Depends(get_postgres))-> UserInfoResponse:
+    user_info, dbConnect = user_data
 
-    logger.warning("entra al router info")
+    streak_data_verified = await verify_streak(user_info, dbConnect)
 
-    response = await userInfoService(id, db)
-
-
-    logger.warning("vuelve exitosamente")
-
-    return response
+    return streak_data_verified
 
 
     

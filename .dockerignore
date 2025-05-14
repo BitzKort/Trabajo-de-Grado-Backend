@@ -27,6 +27,11 @@ __pycache__/
 
 .env
 *.env.local
+.env
+
+*.env 
+*.env.*
+.env.**
 
 # Ignorar archivos de desarrollo
 docker-compose.override.yml

@@ -1,12 +1,9 @@
 import os
-from schemas.nplSchemas import QuestionCardResponse, SentenceCompareResponse
+from src.schemas.nplSchemas import QuestionCardResponse, SentenceCompareResponse
 from sentence_transformers import CrossEncoder
 from loguru import logger
 import re
 import dotenv
-
-
-dotenv.load_dotenv(dotenv_path="../.env.prod")
 
 stsb_path = os.getenv("STSB_MODEL_PATH")
 

@@ -1,12 +1,7 @@
 from pydantic import BaseModel, ConfigDict
-
+from datetime import datetime
 
 #schemas for responses models
-
-class LoginResponse(BaseModel):
-
-    auth: str
-
 
 class RankingResponse(BaseModel):
 
@@ -20,6 +15,7 @@ class UserInfoResponse(BaseModel):
     exp:int
     dias:int
     ranking:int
+    last_activity_date: datetime
 
 class LessonResponse(BaseModel):
 
@@ -54,31 +50,9 @@ class Racha(BaseModel):
     dias: int
     exp: int
     
-    
-#schemas for body structure 
-class Login(BaseModel):
-
-    email: str
-    password: str
-
-class Register(BaseModel):
-
-    name: str
-    username: str
-    email: str
-    password: str
-
 class UserInfoEntry(BaseModel):
     id:str
 
-
-
-#Schemas for inner validations
-
-class EmailCheckerResponse(BaseModel):
-
-    id:str
-    password: str
 
 class userNameResponse(BaseModel):
 

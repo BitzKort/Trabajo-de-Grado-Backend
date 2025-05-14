@@ -13,7 +13,7 @@ from pprint import pprint
 
 def checkout():
 
-    dotenv.load_dotenv(dotenv_path="../.env")
+    dotenv.load_dotenv(dotenv_path="../.env.dev")
      
 
     global modules_path 

@@ -3,10 +3,9 @@ import asyncpg
 import dotenv
 from loguru import logger
 from typing import Optional
-
-dotenv.load_dotenv(dotenv_path="../.env.prod")
-
+import redis.asyncio as asyncredis
 conn_pool: Optional[asyncpg.Pool] = None
+redis_client_pool: asyncredis.Redis
 
 
 #alembic library
@@ -117,3 +116,53 @@ async def close_postgres() -> None:
             raise
     else:
         logger.warning("PostgreSQL connection pool was not initialized.")
+
+
+
+async def init_redis():
+
+    global redis_client_pool 
+
+    logger.warning("initializing redis connection")
+
+    try:
+
+        redis_client_pool= asyncredis.from_url(
+            os.getenv("REDIS_BACKEND_URL"),
+            encoding="utf-8", decode_responses=True
+        )
+
+        await redis_client_pool.ping()
+
+        logger.success("Redis pool is ready ")
+
+    except Exception as e:
+        logger.error(f"something happend initializing redis pool: {e}")
+
+
+async def get_redis():
+
+    global redis_client_pool
+    if redis_client_pool is None:
+        logger.error("Connection to redis is not initialized.")
+        raise ConnectionError("redis connection is not initialized.")
+    try:
+        return redis_client_pool
+    except Exception as e:
+        logger.error(f"Failed to return redis connection: {e}")
+        raise
+
+
+async def close_redis():
+
+    global redis_client_pool
+    if redis_client_pool is None:
+        logger.warning("close_redis() called but redis_client is not initialized.")
+        return
+
+    try:
+        await redis_client_pool.aclose()
+        logger.info("Redis connection closed successfully.")
+    except Exception as e:
+        logger.error(f"Error closing Redis connection: {e}")
+        raise

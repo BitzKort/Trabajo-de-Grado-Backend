@@ -1,8 +1,10 @@
+import redis
+import asyncpg
 from fastapi import Depends, HTTPException, APIRouter, Query
 from loguru import logger
 from src.schemas.userSchema import Lessons, LessonResponse
-import asyncpg
-from src.repository.db import get_postgres
+from src.repository.db import get_postgres, get_redis
+from src.services.authServices import get_current_user
 from typing import Annotated
 
 
@@ -10,21 +12,21 @@ lessonsRouter = APIRouter()
 
 #Router para traer todas las lecciones
 @lessonsRouter.get("/lessons")
-async def getAllLessons(db: asyncpg = Depends(get_postgres)):
+async def getAllLessons(redis_client_pool: redis = Depends(get_redis), token:str = Depends(get_current_user) ):
 
-    query =" SELECT id, title, questions FROM lessons;"
+    try:
+        value = await redis_client_pool.get("lessons:default")
+    except Exception as e:
+        raise HTTPException(502, f"Error comunicándose con Redis: {e}")
+    if value is None:
+        raise HTTPException(404, "Clave no encontrada")
+    return {"lessons_default": value}
 
-    async with db.acquire() as conn:
 
-        lessons = await conn.fetch(query)
+#Este es para tener un crud para postgres
+@lessonsRouter.get("/lesson", response_model=LessonResponse, )
 
-        return [ Lessons(**dict(lesson)) for lesson in lessons]
-    
-#Router para traer  leccion especifica
-
-@lessonsRouter.get("/lesson", response_model=LessonResponse)
-
-async def lessonId(id:Annotated[str, Query(...)], db: asyncpg = Depends(get_postgres)) -> LessonResponse:
+async def lessonId(id:Annotated[str, Query(...)], db: asyncpg = Depends(get_postgres), token:str = Depends(get_current_user)) -> LessonResponse:
 
     query = "SELECT * FROM lessons WHERE id = $1;"
 
@@ -42,8 +44,10 @@ async def lessonId(id:Annotated[str, Query(...)], db: asyncpg = Depends(get_post
 
 
 
-#Router para la actualizacion de todas las lecciones
-@lessonsRouter.get("/UpdateLessons")
+
+
+#Router para guardar las lecciones completadas por el user
+@lessonsRouter.get("/saveLesson")
 
 async def getAllLessons(db: asyncpg = Depends(get_postgres)):
 
