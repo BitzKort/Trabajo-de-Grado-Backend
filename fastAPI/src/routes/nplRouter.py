@@ -1,21 +1,13 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
 from loguru import logger
-
-from src.schemas.nplSchemas import QuestionCardResponse, SentenceCompareResponse
+from src.schemas.nplSchemas import SentenceCompareResponse, SentencesCompareEnrty
 from src.services.nplServices import compareAnswer
-from src.services.authServices import get_current_user
-from typing import List,Annotated
-
+from typing import Annotated
 
 nplRouter = APIRouter()
 
-#investigar el envio con post, el uso de get va por paramss
-@nplRouter.get("/compare", response_model=SentenceCompareResponse)
 
-async def sentenceCompare(sentenceNlp: Annotated[str, Query(...)], token:str = Depends(get_current_user))-> SentenceCompareResponse:
+@nplRouter.get("/compareResponses", response_model=SentenceCompareResponse)
+async def sentenceCompare(sentenceNlp: Annotated[SentencesCompareEnrty, Query(...)], compareResponse = Depends(compareAnswer))-> SentenceCompareResponse:
 
-    print(sentenceNlp)
-    
-    response = await compareAnswer(sentenceNlp)
-
-    return response
+    return compareResponse

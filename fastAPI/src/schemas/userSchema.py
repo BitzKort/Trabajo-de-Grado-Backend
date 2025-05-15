@@ -1,15 +1,10 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-
+from typing import Optional
 #schemas for responses models
 
-class RankingResponse(BaseModel):
-
-    username: str
-    exp: int
-    dias: int
-
 class UserInfoResponse(BaseModel):
+    id:str
     name:str
     username: str
     exp:int
@@ -23,6 +18,10 @@ class LessonResponse(BaseModel):
     title: str
     text:str
     questions:int
+
+class RegisterValidation(BaseModel):
+    
+    userid:str
 
 
 #schemas for tables
@@ -53,8 +52,7 @@ class Racha(BaseModel):
 class UserInfoEntry(BaseModel):
     id:str
 
-
-class userNameResponse(BaseModel):
-
-    name:str
-    username:str
+class UserUpdateModel(BaseModel):
+    id: str
+    name: Optional[str] = None
+    username: Optional[str] = None

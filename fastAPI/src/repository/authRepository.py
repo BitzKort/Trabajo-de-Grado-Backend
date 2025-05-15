@@ -1,9 +1,7 @@
 from fastapi import Depends, HTTPException, status
 from loguru import logger
 import asyncpg
-from tsidpy import TSID
-
-from src.schemas.authSchemas import EmailCheckerResponse, RegisterValidation
+from src.schemas.authSchemas import EmailCheckerResponse, ForgotPasswordRequest, Token, Id
 
 async def emailCheckerRepository(email, dbConect: asyncpg.Pool) -> str:
 
@@ -32,32 +30,75 @@ async def emailCheckerRepository(email, dbConect: asyncpg.Pool) -> str:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error during the user auth"
         )
 
-async def createUserRepository(userData, dbConect: asyncpg.Pool) -> RegisterValidation:
 
-    id = str(TSID.create())
+async def get_userid_by_email(email, dbConect: asyncpg.Pool) -> Id:
 
-    query ="INSERT INTO users (id, name, username, email, password) VALUES (($1)::text, $2, $3, $4, $5) RETURNING id AS userid;"
+    query ="SELECT id FROM users WHERE email = $1;"
 
+    try:
 
-    try: 
         async with dbConect.acquire() as conn:
 
-           new_user = await conn.fetchrow(
-                query,
-                id,
-                userData.name,
-                userData.username,
-                userData.email,
-                userData.password
-            )
-                      
-           user = RegisterValidation(**dict(new_user))
-           
-           logger.success("user created")
+            response = await conn.fetchrow(query, email)
 
-           return user 
+            response = Id(**dict(response))
+
+            return response
+            
+    except Exception as e:
+
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+    
+
+async def set_password_recovery(email, token, dbConect: asyncpg.Pool) -> Token:
+
+    query ="UPDATE users SET password_recovery = $2 WHERE id = $1 RETURNING password_recovery AS token;"
+
+    try:
+
+        async with dbConect.acquire() as conn:
+
+            response = await conn.fetchrow(query, email, token)
+
+            response = Token(**dict(response))
+
+            return response
+            
+    except Exception as e:
+
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+
+
+async def verify_token_recovery(token_recovery, dbConect: asyncpg.Pool) -> Id:
+
+    query ="SELECT id FROM users WHERE password_recovery = $1;"
+
+    try:
+
+        async with dbConect.acquire() as conn:
+
+            response = await conn.fetchrow(query, token_recovery)
+
+            response = Id(**dict(response))
+
+            return response
+            
+    except Exception as e:
+
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+    
+
+async def delete_token_recovery(email, dbConect: asyncpg.Pool) -> Token:
+
+    query ="UPDATE users SET password_recovery = NULL WHERE id = $1;"
+
+    try:
+
+        async with dbConect.acquire() as conn:
+
+            await conn.fetchrow(query, email)
 
     except Exception as e:
-        logger.error(f"Error on insert user: {e}")
 
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
 

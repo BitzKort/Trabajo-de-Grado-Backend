@@ -1,5 +1,6 @@
 
 from pydantic import BaseModel, EmailStr
+from typing import Optional
 
 
 #schemas for routers
@@ -29,6 +30,25 @@ class EmailCheckerResponse(BaseModel):
     id:str
     password: str
 
-class RegisterValidation(BaseModel):
-    
-    userid:str
+class ForgotPasswordRequest(BaseModel):
+
+    email: EmailStr
+
+
+class UseridEmailResponse(BaseModel):
+
+    id: str
+    email:EmailStr
+
+class resetPasswordResponse(BaseModel):
+
+    msg:str
+
+class Id(BaseModel):
+    id:str
+
+class Token(BaseModel):
+    token:str
+
+
+

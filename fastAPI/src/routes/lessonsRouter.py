@@ -12,7 +12,7 @@ lessonsRouter = APIRouter()
 
 #Router para traer todas las lecciones
 @lessonsRouter.get("/lessons")
-async def getAllLessons(redis_client_pool: redis = Depends(get_redis), token:str = Depends(get_current_user) ):
+async def get_lessons(redis_client_pool: redis = Depends(get_redis), token:str = Depends(get_current_user) ):
 
     try:
         value = await redis_client_pool.get("lessons:default")
@@ -26,7 +26,7 @@ async def getAllLessons(redis_client_pool: redis = Depends(get_redis), token:str
 #Este es para tener un crud para postgres
 @lessonsRouter.get("/lesson", response_model=LessonResponse, )
 
-async def lessonId(id:Annotated[str, Query(...)], db: asyncpg = Depends(get_postgres), token:str = Depends(get_current_user)) -> LessonResponse:
+async def get_extra_lessons(id:Annotated[str, Query(...)], db: asyncpg = Depends(get_postgres), token:str = Depends(get_current_user)) -> LessonResponse:
 
     query = "SELECT * FROM lessons WHERE id = $1;"
 

@@ -1,5 +1,5 @@
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from src.repository.db import get_postgres
 from src.schemas.userSchema import User, UserInfoResponse, UserInfoEntry
 from typing import List, Annotated
@@ -7,7 +7,7 @@ import asyncpg
 from loguru import logger
 
 from src.services.authServices import get_current_user
-from src.services.userServices import userInfo, verify_streak
+from src.services.userServices import userInfo, verify_streak, updateUser
 
 
 userRouter = APIRouter()
@@ -43,6 +43,11 @@ async def getUserInfo(id: Annotated[UserInfoEntry, Query(...)], user_data: UserI
 
     return streak_data_verified
 
+@userRouter.put("/updateUser", status_code=status.HTTP_200_OK)
+
+async def update_user(userData = Depends(updateUser)):
 
     
+    return userData
+
 

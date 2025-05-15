@@ -20,6 +20,9 @@ class SentenceCompareResponse(BaseModel):
     sentenceUser:str
     score: str
 
+class SentencesCompareEnrty(BaseModel):
+    sentenceNlp: str
+    sentenceUser:str 
 #schemas for inner validations
 
 
