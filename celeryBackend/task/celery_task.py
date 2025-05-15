@@ -11,18 +11,14 @@ from typing import List
 from loguru import logger
 from celery import group, chord
 from datasets import load_from_disk
+from src.repository.dbConection import get_postgres_conn, release_postgres_conn
+from src. repository.lessonRepository import insert_lesson
+from tsidpy import TSID
+
 
 
 dotenv.load_dotenv(dotenv_path="../.env.prod")
-
-
 data_path = os.getenv("DATASPLIT_PATH")
-
-
-#1. server rest -> front react
-#1.1. neondb
-#2. redis lecciones
-#3. celery
 
 #Este metodo genera un dict con id, url, titulo y texto
 def getDatasetText(dataset) -> list:
@@ -60,16 +56,27 @@ def generate_lesson(dict_text) -> str:
 @celery.task(bind=True)     
 def save_on_dbs(self, results):
 
+    
     redis = self.backend.client
 
-    data_json = json.dumps(results, ensure_ascii=False)
+    #iteramos con el fin de guardar una por una en postgres y redis
+    for result in results:
 
-    key = f"lessons:default"
+        conexion = get_postgres_conn()
+        id = str(TSID.create())
 
-    redis.set(key, data_json)
+        #para postgress
+        lesson = QuestionCardResponse(**result)
 
-    return {"stored_key": key, "count": len(results)}
-    
+        try:
+            insert_lesson(id, lesson, conexion)
+        finally:
+            release_postgres_conn(conexion)
+        
+        #para redis
+        key = f"lessons:{id}"
+
+        redis.set(key, result)
 
 @celery.task
 def generate_lessons():

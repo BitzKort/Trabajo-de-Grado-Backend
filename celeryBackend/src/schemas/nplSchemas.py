@@ -8,7 +8,6 @@ class Question(BaseModel):
     question:str
 
 class QuestionCardResponse(BaseModel):
-
     title:str
     text:str
     Questions: List[Question]

@@ -16,3 +16,4 @@ typer==0.15.2
 typing_extensions
 yarl==1.19.0
 watchfiles==1.0.4
+psycopg2
