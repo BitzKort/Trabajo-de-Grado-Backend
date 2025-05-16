@@ -25,7 +25,7 @@ class RaceModel:
     
     def _loadModel(self):
 
-        dotenv.load_dotenv(dotenv_path="../.env.prod")
+        dotenv.load_dotenv(dotenv_path="../.env.dev")
 
         self.race_path = os.getenv("RACE_PATH")
 

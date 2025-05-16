@@ -19,9 +19,11 @@ def checkout():
     global modules_path 
     global gpt_path 
     global race_path 
-    global squad_path 
+    global squad_path
+    global distractor_path
     global datasetFolder
     global datasetFilterFolder
+
 
 
     modules_path = os.getenv("MODULES_PATH")
@@ -30,28 +32,16 @@ def checkout():
     gpt_path = os.getenv("GPT2_PATH")
     race_path = os.getenv("RACE_PATH")
     squad_path = os.getenv("SQUAD_PATH")
+    distractor_path = os.getenv("DISTRACTOR_PATH")
+
+    init_Folders()
      
-
-    logger.warning("scanning necessary files")
-
-    if not (Path(modules_path).is_dir() and Path(datasetFolder).is_dir() and Path(gpt_path).is_dir() and Path(race_path).is_dir() and Path(squad_path).is_dir() and Path(datasetFilterFolder).is_dir()):
-         
-        logger.warning("some folders were not found")
-        init_Folders()
-    
-    else:
-         logger.success("ready to start the server")
-
-
-
-
-
 
 def init_Folders():
 
     logger.warning("creating the folder for the models")
 
-    dotenv.load_dotenv(dotenv_path=".env")
+    dotenv.load_dotenv(dotenv_path=".env.dev")
 
 
     
@@ -61,6 +51,7 @@ def init_Folders():
     os.makedirs(gpt_path, exist_ok=True)
     os.makedirs(race_path, exist_ok=True)
     os.makedirs(squad_path, exist_ok=True)
+    os.makedirs(distractor_path, exist_ok=True)
     os.makedirs(datasetFolder, exist_ok=True)
     os.makedirs(datasetFilterFolder, exist_ok=True)
 
@@ -85,7 +76,10 @@ def init_models():
 
     squadQAGenerator = pipeline("text2text-generation", model = "potsawee/t5-large-generation-squad-QuestionAnswer")
 
-    #Model for semantic similarity "compare the user/model answers with an attention model" (cross-encoder/stsb-roberta-base)
+    #Model for distractor answers t5-large-generation-race-Distractor
+
+    DGenerator = pipeline("text2text-generation", model="potsawee/t5-large-generation-race-Distractor")
+
     
 
     logger.warning("Saving models")
@@ -102,6 +96,9 @@ def init_models():
     #For squad-t5 model (extractive)
     squadQAGenerator.model.save_pretrained(squad_path)
     squadQAGenerator.tokenizer.save_pretrained(squad_path)
+
+    DGenerator.model.save_pretrained(distractor_path)
+    DGenerator.tokenizer.save_pretrained(distractor_path)
 
 
     logger.success("All models saved in the server")

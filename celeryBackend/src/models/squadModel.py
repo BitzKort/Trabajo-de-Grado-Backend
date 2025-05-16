@@ -26,7 +26,7 @@ class SquadModel():
     
     def _loadModel(self):
 
-        dotenv.load_dotenv(dotenv_path="../.env.prod")
+        dotenv.load_dotenv(dotenv_path="../.env.dev")
 
         self.squad_path = os.getenv("SQUAD_PATH")
 
