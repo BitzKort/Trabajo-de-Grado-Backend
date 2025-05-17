@@ -1,6 +1,5 @@
 import os
 import asyncpg
-import dotenv
 from loguru import logger
 from typing import Optional
 import redis.asyncio as asyncredis
@@ -123,7 +122,7 @@ async def init_redis():
 
     global redis_client_pool 
 
-    logger.warning("initializing redis connection")
+    logger.warning(f"initializing redis connection at: {os.getenv("REDIS_BACKEND_URL")}")
 
     try:
 

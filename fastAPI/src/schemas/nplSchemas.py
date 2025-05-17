@@ -16,15 +16,18 @@ class QuestionCardResponse(BaseModel):
 
 class SentenceCompareResponse(BaseModel):
 
-    sentenceNlp: str
-    sentenceUser:str
-    score: str
+    userId:str
+    newExp:int
+    score:float
 
 class SentencesCompareEnrty(BaseModel):
+    userId:str
+    newExp:int
     sentenceNlp: str
-    sentenceUser:str 
-#schemas for inner validations
+    sentenceUser:str
 
+class CompareRouterResponse(BaseModel):
 
-
-#schemas for body structure
+    userId:str
+    score:float
+    msg:str

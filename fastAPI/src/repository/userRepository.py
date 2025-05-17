@@ -26,26 +26,6 @@ async def getUserInfo(id, dbConect: asyncpg.Pool) -> UserInfoResponse:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
 
 
-async def update_strike(userInfo, dbConect: asyncpg.pool):
-
-    query =" UPDATE racha SET dias = $2, exp = $3, last_activity_date = $4 WHERE id = $1; RETURNING *"
-
-    try:
-
-        async with dbConect.acquire() as conn:
-
-            DBResponse = await conn.fetchrow(query, userInfo.id, userInfo.dias, userInfo.exp, userInfo.last_activity_date)
-
-            UserResponse = UserInfoResponse(**dict(DBResponse))
-
-            return UserResponse
-        
-    except Exception as e:
-
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
-
-
-
 async def createUserRepository(userData, dbConect: asyncpg.Pool) -> RegisterValidation:
 
     id = str(TSID.create())

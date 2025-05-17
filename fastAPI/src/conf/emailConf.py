@@ -2,7 +2,7 @@ from fastapi_mail import ConnectionConfig
 import dotenv
 import os
 
-dotenv.load_dotenv("../.env.prod")
+dotenv.load_dotenv("../.env.dev")
 
 EMAIL= os.getenv("EMAIL")
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")

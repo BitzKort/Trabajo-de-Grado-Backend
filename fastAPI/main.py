@@ -22,7 +22,7 @@ async def lifespan(app: FastAPI):
 
 
 
-dotenv.load_dotenv(dotenv_path="../.env.prod")
+dotenv.load_dotenv(dotenv_path="../.env.dev")
 
 app = FastAPI(title = "Ogloc Backend 3.0", lifespan=lifespan)
 

@@ -3,7 +3,9 @@ from loguru import logger
 from fastapi import HTTPException, status, Depends
 from datetime import timedelta, datetime, date
 from src.schemas.userSchema import UserInfoResponse, UserInfoEntry, UserUpdateModel
-from src.repository.userRepository import getUserInfo, update_strike, userUpdate
+from src.schemas.nplSchemas import CompareRouterResponse
+from src.repository.userRepository import getUserInfo, userUpdate
+from src.repository.streakRepository import update_strike, update_exp
 from src.repository.db import get_postgres
 from src.services.authServices import get_current_user
 
@@ -43,6 +45,22 @@ async def updateUser(userData: UserUpdateModel = Depends(), token = Depends(get_
         await userUpdate(userData, dbConnect)
 
         return {"msg":"user updated succesfully"}
+    
+    except HTTPException:
+        raise
+
+    except Exception as e:
+
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+    
+
+
+async def updateExp(userId, newExp, newLastTime, score, dbConnect):
+
+    try:
+        await update_exp(userId, newExp, newLastTime, dbConnect)
+
+        return CompareRouterResponse(userId=userId, score=score, msg="Respuesta correcta")
     
     except HTTPException:
         raise

@@ -14,6 +14,7 @@ from celery import group, chord
 from datasets import load_from_disk
 from src. repository.lessonRepository import insert_lesson
 from tsidpy import TSID
+from src.repository.lessonRepository import delete_lessons_data
 
 
 
@@ -93,37 +94,69 @@ def generate_lesson(dict_text) -> str:
 @celery.task(bind=True)     
 def save_on_dbs(self, results):
 
-    logger.warning("Lecciones en proceso de guardado")
     redis = self.backend.client
+
+    pipeline = redis.pipeline()
+
+    all_lesson_ids = []
+
+    try:
+
+        logger.warning("Iniciando borrado de lecciones antiguas")
+
+        delete_lessons_data(self.backend.client)
+
+    except Exception as e:
+
+        logger.error(e)
+
+
+
+
+    logger.warning("Lecciones en proceso de guardado")
+
 
     #iteramos con el fin de guardar una por una en postgres y redis
     for result in results:
 
-        id = str(TSID.create())
-
-        #para postgress
-        lesson = QuestionCardResponse.model_validate_json(result)
-
         try:
+            id = str(TSID.create())
+
+             #para postgress
+            lesson = QuestionCardResponse.model_validate_json(result)
+
             insert_lesson(id, lesson)
 
+            
+            #para redis
+            key = f"lesson:{id}"
+
+            all_lesson_ids.append(key)
+
+
+            redisResult = RedisSave(id=id, title=lesson.title, question_count=str(len(lesson.Questions)))
+
+            pipeline.hset(
+                name=key,
+                mapping=redisResult.model_dump()
+                )
+
         except Exception as e:
-            raise
-        
-        #para redis
-        key = f"lessons:{id}"
-
-
-        redisResult = RedisSave(id=id, title=lesson.title, question_count=str(len(lesson.Questions)))
-
-        redisResult = redisResult.model_dump_json()
-
-        redis.set(key, redisResult)
+            
+            logger.error(e)
     
+    if all_lesson_ids:
+        pipeline.sadd("all_lessons", *all_lesson_ids)
+
+    pipeline.execute()
+
     logger.success("Todas las lecciones han sido guardadas")
 
 @celery.task
 def generate_lessons():
+
+
+
 
     dataset = load_from_disk(data_path)
    

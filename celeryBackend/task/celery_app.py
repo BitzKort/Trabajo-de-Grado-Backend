@@ -1,5 +1,5 @@
 from celery import Celery
-from celery.signals import worker_process_init, worker_process_shutdown
+from celery.signals import worker_process_init, worker_ready
 from celery.schedules import crontab
 import os
 import dotenv
@@ -33,3 +33,5 @@ celery.conf.update(
 @worker_process_init.connect
 def init_pools(**kwargs):
     random.seed(os.getpid() + int(time.time()))
+
+

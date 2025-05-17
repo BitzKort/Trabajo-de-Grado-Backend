@@ -12,21 +12,7 @@ lessonsRouter = APIRouter()
 
 #Router para traer todas las lecciones
 @lessonsRouter.get("/lessons")
-async def get_lessons(redis_client_pool: redis = Depends(get_redis), token:str = Depends(get_current_user) ):
-
-    try:
-        value = await redis_client_pool.get("lessons:default")
-    except Exception as e:
-        raise HTTPException(502, f"Error comunicándose con Redis: {e}")
-    if value is None:
-        raise HTTPException(404, "Clave no encontrada")
-    return {"lessons_default": value}
-
-
-#Este es para tener un crud para postgres
-@lessonsRouter.get("/lesson", response_model=LessonResponse, )
-
-async def get_extra_lessons(id:Annotated[str, Query(...)], db: asyncpg = Depends(get_postgres), token:str = Depends(get_current_user)) -> LessonResponse:
+async def lessonId(id:Annotated[str, Query(...)], db: asyncpg = Depends(get_postgres)) -> LessonResponse:
 
     query = "SELECT * FROM lessons WHERE id = $1;"
 
@@ -43,18 +29,24 @@ async def get_extra_lessons(id:Annotated[str, Query(...)], db: asyncpg = Depends
 
 
 
-
-
-
-#Router para guardar las lecciones completadas por el user
-@lessonsRouter.get("/saveLesson")
-
-async def getAllLessons(db: asyncpg = Depends(get_postgres)):
-
-    query =" SELECT id, title, questions FROM lessons;"
-
-    async with db.acquire() as conn:
-
-        lessons = await conn.fetch(query)
-
-        return [ Lessons(**dict(lesson)) for lesson in lessons]
+#cambiar y hacer verificacion con neon de si un usuario es apto o no
+@lessonsRouter.get("/AllLessons")
+async def get_lesson_keys(redis: redis = Depends(get_redis), token:str = Depends(get_current_user) ):
+    lesson_keys = []
+    cursor = '0'
+    pattern = "all_lessons"
+    
+    while True:
+        cursor, keys = await redis.scan(
+            cursor=cursor,
+            match=pattern,
+            count=10  # Cantidad a traer por iteración
+        )
+        lesson_keys.extend(keys)
+        
+        # Detenemos si no hay más claves o ya tenemos 10
+        if cursor == 0 or len(lesson_keys) >= 10:
+            break
+    
+    # Limitar a máximo 10 claves y quitar posibles duplicados
+    return list(dict.fromkeys(lesson_keys))[:10]

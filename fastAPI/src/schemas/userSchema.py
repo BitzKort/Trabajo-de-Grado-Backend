@@ -41,13 +41,6 @@ class Lessons(BaseModel):
     title: str
     questions:int
 
-
-
-class Racha(BaseModel):
-
-    id:str
-    dias: int
-    exp: int
     
 class UserInfoEntry(BaseModel):
     id:str

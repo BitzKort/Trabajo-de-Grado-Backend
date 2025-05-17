@@ -29,3 +29,26 @@ def insert_lesson(id: str, lesson: QuestionCardResponse):
             db.rollback()
             logger.error(f"Error insertando lección: {str(e)}")
             raise
+
+
+def delete_lessons_data(redis_client):
+
+    pipeline = redis_client.pipeline()
+    deleted_counts = {'lessons': 0, 'users': 0}
+    
+    # Lecciones individuales
+    for key in redis_client.scan_iter(match="lesson:*"):
+        pipeline.delete(key)
+        deleted_counts['lessons'] += 1
+    
+    # Progreso de usuarios
+    for key in redis_client.scan_iter(match="user:*:completed"):
+        pipeline.delete(key)
+        deleted_counts['users'] += 1
+    
+    # Set global
+    pipeline.delete("all_lessons")
+    
+    pipeline.execute()
+    
+    logger.info(f"deleted: {deleted_counts}")

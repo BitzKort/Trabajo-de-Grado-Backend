@@ -33,17 +33,12 @@ async def verify_password(password, password_hashed):
 async def create_token(user_data: str, type:str) -> str:
 
     ACCESS_TIME = int(os.getenv("ACCESS_TOKEN_TIME_MINUTES"))
-    REFRESH_TIME = int(os.getenv("REFRESH_TOKEN_TIME_MINUTES"))
     SECRET_KEY = os.getenv("SECRET_KEY")
     ALGORITHM = os.getenv("ALGORITHM")
 
     if type == "access":
 
         token_expires = timedelta(minutes=ACCESS_TIME)
-    
-    elif type == "refresh":
-
-        token_expires = timedelta(minutes=REFRESH_TIME)   
 
     to_encode = {"sub": user_data}
     if token_expires:
@@ -202,7 +197,7 @@ async def forgotPassword( emailData:ForgotPasswordRequest= Depends(), dbConect =
 
 
 async def send_password_email(email: str, token: str):
-    reset_link = f"https://tu-frontend.com/reset-password?token={token}"
+    reset_link = f"http://localhost:8000/reset-password?token={token}"
     msg = MessageSchema(
         subject="Restablece tu contraseña",
         recipients=[email],
