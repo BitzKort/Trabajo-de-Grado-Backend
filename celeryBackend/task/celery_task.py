@@ -7,7 +7,7 @@ from src.models.gpt2Model import Gpt2Model
 from src.models.raceModel import RaceModel
 from src.models.squadModel import SquadModel
 from src.models.distractorModel import DistractorModel
-from src.schemas.nplSchemas import QuestionCardResponse, Question
+from src.schemas.nplSchemas import QuestionCardResponse, Question, RedisSave
 from typing import List
 from loguru import logger
 from celery import group, chord
@@ -23,7 +23,7 @@ data_path = os.getenv("DATASPLIT_PATH")
 #Este metodo genera un dict con id, url, titulo y texto
 def getDatasetText(dataset) -> list:
     
-    randomId = random.sample(range(1,205328),10)
+    randomId = random.sample(range(1,205328),3)
 
     sample_text = list(map(lambda x: dataset[x],randomId))
 
@@ -113,7 +113,12 @@ def save_on_dbs(self, results):
         #para redis
         key = f"lessons:{id}"
 
-        redis.set(key, result)
+
+        redisResult = RedisSave(id=id, title=lesson.title, question_count=str(len(lesson.Questions)))
+
+        redisResult = redisResult.model_dump_json()
+
+        redis.set(key, redisResult)
     
     logger.success("Todas las lecciones han sido guardadas")
 

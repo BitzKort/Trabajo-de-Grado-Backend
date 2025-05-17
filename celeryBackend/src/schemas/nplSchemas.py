@@ -24,7 +24,12 @@ class SentenceCompareResponse(BaseModel):
     sentenceUser:str
     score: str
 
-#schemas for inner validations
+
+class RedisSave(BaseModel):
+
+    id:str
+    title:str
+    question_count:int
 
 
 
