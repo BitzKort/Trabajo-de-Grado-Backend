@@ -8,7 +8,7 @@ class UserInfoResponse(BaseModel):
     name:str
     username: str
     exp:int
-    dias:int
+    days:int
     ranking:int
     last_activity_date: datetime
 
@@ -28,10 +28,6 @@ class User(BaseModel):
     email: str
     password:str
     
-class UserInfoEntry(BaseModel):
-    id:str
-
 class UserUpdateModel(BaseModel):
-    id: str
     name: Optional[str] = None
     username: Optional[str] = None

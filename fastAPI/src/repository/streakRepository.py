@@ -6,7 +6,7 @@ from src.schemas.userSchema import UserInfoResponse
 
 async def update_strike(userInfo, dbConect: asyncpg.pool):
 
-    query =" UPDATE racha SET dias = $2, exp = $3, last_activity_date = $4 WHERE id = $1 RETURNING * ;"
+    query =" UPDATE streaks SET days = $2, exp = $3, last_activity_date = $4 WHERE id = $1 RETURNING * ;"
 
     try:
 
@@ -50,31 +50,28 @@ async def get_last_activity_day(userId: str, dbConnect):
         )
 
 
-async def update_days(user_id: str, days: int, dbConnect):
+async def update_days(user_id: str, dbConnect):
    
     query = """
-        UPDATE user_progress SET days = $2 WHERE id = $1;
+        UPDATE streaks SET days = days + 1 WHERE id = $1;
     """
 
     try:
         async with dbConnect.acquire() as conn:
-            await conn.execute(query, user_id, days)
+            await conn.execute(query, user_id)
 
     except Exception as e:
         logger.error(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error actualizando el progreso del usuario."
+            detail="Error actualizando los dias del usuario."
         )
 
 
-async def update_exp_and_day(userId, newExp, newLastTime, dbConect: asyncpg.pool):
+async def update_exp(userId, newExp, newLastTime, dbConect: asyncpg.pool):
 
-    lad = await get_last_activity_day(userId: str, dbConnect)
 
-  #hasta aqui llegue por estos dos dias
-
-    query =" UPDATE racha SET exp = exp + $2, last_activity_date = $3 WHERE id = $1;"
+    query =" UPDATE streaks SET exp = exp + $2, last_activity_date = $3 WHERE id = $1;"
 
     try:
 

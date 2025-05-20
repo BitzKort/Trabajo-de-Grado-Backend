@@ -3,7 +3,7 @@ import asyncpg
 import redis.asyncio as asyncredis
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from src.repository.db import get_postgres, get_redis
-from src.schemas.userSchema import User, UserInfoResponse, UserInfoEntry
+from src.schemas.userSchema import User, UserInfoResponse
 from typing import List, Annotated
 from loguru import logger
 from src.services.authServices import get_current_user
@@ -14,28 +14,8 @@ userRouter = APIRouter()
 
 
 
-@userRouter.get("/getUsers", response_model=List[User])
-async def test(dbConect: asyncpg.Pool = Depends(get_postgres), token:str = Depends(get_current_user)) -> List[User]:
-
-
-    query = "SELECT * from users;"
-
-    try:
-
-        async with dbConect.acquire() as conn:
-
-            results = await conn.fetch(query)
-            return [User(**dict(result)) for result in results]
-    
-    except Exception as e:
-
-        logger.error(f"Error encontrando el usuario: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
-
-
-
-@userRouter.post("/userInfo", response_model=UserInfoResponse)
-async def getUserInfo(id: Annotated[UserInfoEntry, Query(...)], user_data: UserInfoResponse = Depends(userInfo))-> UserInfoResponse:
+@userRouter.get("/userInfo", response_model=UserInfoResponse)
+async def getUserInfo(user_data: UserInfoResponse = Depends(userInfo))-> UserInfoResponse:
 
 
     try:
@@ -67,7 +47,7 @@ async def update_user(userData = Depends(updateUser)):
 
 
 @userRouter.delete("/deleteLogicUser")
-async def test(userId:str,dbConect: asyncpg.Pool = Depends(get_postgres), redisConnect: asyncredis.Redis = Depends(get_redis),token:str = Depends(get_current_user)):
+async def test(dbConect: asyncpg.Pool = Depends(get_postgres), redisConnect: asyncredis.Redis = Depends(get_redis), userId:str = Depends(get_current_user)):
 
 
     query ="UPDATE users SET deleted = $2 WHERE id = $1;"

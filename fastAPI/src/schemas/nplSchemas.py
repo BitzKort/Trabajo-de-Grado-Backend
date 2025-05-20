@@ -17,14 +17,15 @@ class QuestionCardResponse(BaseModel):
 class SentenceCompareResponse(BaseModel):
 
     userId:str
-    question_id:str
+    lesson_id:str
     newExp:int
     score:float
     type:str
 
 
 class SentencesCompareEnrty(BaseModel):
-    userId:str
+    
+    lesson_id:str
     newExp:int
     sentenceNlp: str
     sentenceUser:str

@@ -2,22 +2,14 @@ from pydantic import BaseModel
 from typing import List
 
 class LessonIdentry(BaseModel):
-
     lessonId:str
-    UserId:str
 
 
 class SaveLessonEnrtry(BaseModel):
 
-    userId:str
     newExp:int
     lessonId:str
     score:float
-
-
-class AllLessonIdentry(BaseModel):
-
-    UserId:str
 
 #for lesson id router
 

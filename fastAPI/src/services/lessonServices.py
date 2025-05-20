@@ -5,10 +5,10 @@ from loguru import logger
 from pydantic import ValidationError
 from src.services.userServices import get_current_user
 from src.repository.db import get_redis
-from src.schemas.lessonSchemas import VerifyAVLResponse, VerifyVLResponse, AllLessonIdentry, LessonIdentry, RedisLesson
+from src.schemas.lessonSchemas import VerifyAVLResponse, VerifyVLResponse, LessonIdentry, RedisLesson
 
 
-async def verify_all_valid_lessons(redisConnect: asyncredis.Redis = Depends(get_redis), lessonData: AllLessonIdentry = Depends(), token: str = Depends(get_current_user)) -> VerifyAVLResponse:
+async def verify_all_valid_lessons(redisConnect: asyncredis.Redis = Depends(get_redis), userId: str = Depends(get_current_user)) -> VerifyAVLResponse:
    
     try:
         
@@ -21,7 +21,7 @@ async def verify_all_valid_lessons(redisConnect: asyncredis.Redis = Depends(get_
 
         all_lessons = await redisConnect.smembers(lessons_key)
 
-        user_key = f"user:{lessonData.UserId}:completed"
+        user_key = f"user:{userId}:completed"
         if not await redisConnect.exists(user_key):
         
             return VerifyAVLResponse(status="success", pending_lessons=list(all_lessons), total_pending=len(all_lessons))
@@ -37,7 +37,7 @@ async def verify_all_valid_lessons(redisConnect: asyncredis.Redis = Depends(get_
         logger.error(e)
         raise e
 
-async def verify_valid_lesson(redisConnect: asyncredis.Redis= Depends(get_redis), userData: LessonIdentry = Depends(), token: str = Depends(get_current_user)) -> VerifyVLResponse:
+async def verify_valid_lesson(redisConnect: asyncredis.Redis= Depends(get_redis), userData: LessonIdentry = Depends(), userId: str = Depends(get_current_user)) -> VerifyVLResponse:
 
     try:
 
@@ -48,7 +48,7 @@ async def verify_valid_lesson(redisConnect: asyncredis.Redis= Depends(get_redis)
         if not await redisConnect.sismember("all_lessons", userData.lessonId):
             return VerifyVLResponse(status="error", lessonId=userData.lessonId, msg="La leccion no existe")
         
-        user_key = f"user:{userData.UserId}:completed"
+        user_key = f"user:{userId}:completed"
         if not await redisConnect.exists(user_key):
             return VerifyVLResponse(status="success", lessonId=userData.lessonId, msg="Leccion disponible")
         

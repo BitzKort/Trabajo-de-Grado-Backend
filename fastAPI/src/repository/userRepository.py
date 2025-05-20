@@ -4,12 +4,12 @@ from fastapi import HTTPException, status
 from loguru import logger
 from tsidpy import TSID
 from src.schemas.userSchema import UserInfoResponse, RegisterValidation, UserUpdateModel
-
+from datetime import datetime
 
 
 async def getUserInfo(id, dbConect: asyncpg.Pool) -> UserInfoResponse:
     
-    query =" SELECT id, name, username, exp, dias, last_activity_date, ranking FROM ( SELECT u.id, u.name, u.username, r.exp, r.dias, r.last_activity_date, DENSE_RANK() OVER (ORDER BY r.exp DESC) AS ranking FROM racha r INNER JOIN users u ON r.id = u.id) t WHERE id = $1;"
+    query =" SELECT id, name, username, exp, days, last_activity_date, ranking FROM ( SELECT u.id, u.name, u.username, s.exp, s.days, s.last_activity_date, DENSE_RANK() OVER (ORDER BY s.exp DESC) AS ranking FROM streaks s INNER JOIN users u ON s.id = u.id) t WHERE id = $1;"
 
     try:
 
@@ -58,6 +58,25 @@ async def createUserRepository(userData, dbConect: asyncpg.Pool) -> RegisterVali
 
 
 
+async def createUserStreak(userId: str, dbConnect):
+    
+
+    new_last_date = datetime.today()
+    query = """
+    INSERT INTO streaks (id, days, exp, last_activity_date)
+    VALUES ($1, 0, 0, $2);
+    """
+
+    try:
+        async with dbConnect.acquire() as conn:
+            await conn.execute(query, userId, new_last_date)
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error creando la racha del usuario."
+        )
+
 async def update_user_password(userId, newPassword, dbConect: asyncpg.Pool):
 
     query ="UPDATE users SET password = $2 WHERE id = $1;"
@@ -75,7 +94,7 @@ async def update_user_password(userId, newPassword, dbConect: asyncpg.Pool):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
     
 
-async def userUpdate(user_data: UserUpdateModel, dbConnect: asyncpg.Pool):
+async def userUpdate(user_data: UserUpdateModel, userId: str, dbConnect: asyncpg.Pool):
     fields = []
     values = []
 
@@ -93,7 +112,7 @@ async def userUpdate(user_data: UserUpdateModel, dbConnect: asyncpg.Pool):
 
     try:
         async with dbConnect.acquire() as conn:
-            row = await conn.fetchrow(query, user_data.id, *values)
+            row = await conn.fetchrow(query, userId, *values)
 
             if row is None:
 

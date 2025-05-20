@@ -7,7 +7,7 @@ from src.repository.db import get_postgres
 from src.schemas.rankingSchemas import RankingResponse
 
 
-async def ranking(dbConnect = Depends(get_postgres), token = Depends(get_current_user)) -> List[RankingResponse]:
+async def ranking(dbConnect = Depends(get_postgres), userId = Depends(get_current_user)) -> List[RankingResponse]:
     
     try:
         ranking = await getRanking(dbConnect)

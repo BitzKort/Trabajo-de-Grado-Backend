@@ -49,7 +49,7 @@ async def lessonId( lessonData: VerifyVLResponse = Depends(verify_valid_lesson),
 
 #cambiar y hacer verificacion con neon de si un usuario es apto o no
 @lessonsRouter.get("/AllLessons")
-async def get_lesson_keys(lessonData: VerifyAVLResponse = Depends(verify_all_valid_lessons), redisConnect: asyncredis.Redis = Depends(get_redis), token:str = Depends(get_current_user)) -> AVLResponse:
+async def get_lesson_keys(lessonData: VerifyAVLResponse = Depends(verify_all_valid_lessons), redisConnect: asyncredis.Redis = Depends(get_redis)) -> AVLResponse:
 
     try:
 
@@ -67,7 +67,7 @@ async def get_lesson_keys(lessonData: VerifyAVLResponse = Depends(verify_all_val
 
 
 @lessonsRouter.get("/failedQuestions")
-async def get_failed_questions( userId: str, dbConnect: asyncpg.pool = Depends(get_postgres), token: str = Depends(get_current_user)) -> IncorrectQuestionResponse:
+async def get_failed_questions(dbConnect: asyncpg.pool = Depends(get_postgres), userId: str = Depends(get_current_user)) -> IncorrectQuestionResponse:
 
     
     query = """SELECT l.id, l.title, l.text, q.question_text, q.answer, q.distractor FROM incorrect_questions iq

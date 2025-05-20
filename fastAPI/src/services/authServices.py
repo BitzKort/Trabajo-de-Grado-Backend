@@ -9,7 +9,7 @@ from jose import JWTError, jwt, ExpiredSignatureError
 from fastapi_mail import FastMail, MessageSchema
 from tsidpy import TSID
 from src.repository.authRepository import emailCheckerRepository, get_userid_by_email, set_password_recovery, verify_token_recovery, delete_token_recovery 
-from src.repository.userRepository import createUserRepository, update_user_password
+from src.repository.userRepository import createUserRepository, update_user_password, createUserStreak
 from src.repository.db import get_postgres, get_redis
 from src.schemas.authSchemas import Register, EmailCheckerResponse, UseridEmailResponse, ForgotPasswordRequest, resetPasswordResponse
 from src.conf.emailConf import conf
@@ -192,15 +192,17 @@ async def createUserService(userData: Register = Depends(), dbConnect = Depends(
 
     userData.password = hashedPassword
 
-    registerResponse =  await createUserRepository(userData, dbConnect)
+    userData =  await createUserRepository(userData, dbConnect)
 
-    if not registerResponse:
+    await createUserStreak(userData.userid, dbConnect)
+
+    if not userData:
 
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="error en la creacion del usuario")
     
     else:
 
-        return registerResponse.userid
+        return userData.userid
 
 
 

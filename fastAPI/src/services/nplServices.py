@@ -8,7 +8,7 @@ from loguru import logger
 stsb_path = os.getenv("STSB_MODEL_PATH")
 
 
-async def compareAnswer(userCompareData:SentencesCompareEnrty = Depends(), token: str = Depends(get_current_user)) -> SentenceCompareResponse:
+async def compareAnswer(userCompareData:SentencesCompareEnrty = Depends(), userId: str = Depends(get_current_user)) -> SentenceCompareResponse:
 
     try:
 
@@ -16,7 +16,7 @@ async def compareAnswer(userCompareData:SentencesCompareEnrty = Depends(), token
 
         predict = str(stsb_model.predict((userCompareData.sentenceNlp, userCompareData.sentenceUser)))
         
-        return SentenceCompareResponse(userId=userCompareData.userId, newExp= userCompareData.newExp, score=predict, type=userCompareData.type)
+        return SentenceCompareResponse(userId=userId, newExp= userCompareData.newExp, lesson_id=userCompareData.lesson_id, score=predict, type=userCompareData.type)
     
     except Exception as e:
 
