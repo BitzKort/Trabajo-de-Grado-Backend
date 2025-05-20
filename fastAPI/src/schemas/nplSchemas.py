@@ -17,8 +17,10 @@ class QuestionCardResponse(BaseModel):
 class SentenceCompareResponse(BaseModel):
 
     userId:str
+    question_id:str
     newExp:int
     score:float
+    type:str
 
 
 class SentencesCompareEnrty(BaseModel):
@@ -26,6 +28,7 @@ class SentencesCompareEnrty(BaseModel):
     newExp:int
     sentenceNlp: str
     sentenceUser:str
+    type:str
 
 class CompareRouterResponse(BaseModel):
 

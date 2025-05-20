@@ -103,3 +103,44 @@ async def userUpdate(user_data: UserUpdateModel, dbConnect: asyncpg.Pool):
 
         logger.error(e)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    
+
+
+async def deleteFromIncorrect(userId: str, question_id: str, dbConnect):
+    query = """
+        DELETE FROM incorrect_questions
+        WHERE user_id = $1 AND question_id = $2;
+    """
+
+    try:
+        async with dbConnect.acquire() as conn:
+            await conn.execute(query, userId, question_id)
+
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error eliminando pregunta incorrecta."
+        )
+
+
+
+async def insertIntoIncorrect(userId: str, question_id: str, dbConnect):
+ 
+    id = str(TSID.create())
+
+    query = """
+        INSERT INTO incorrect_questions (id, user_id, question_id)
+        VALUES ($1, $2, $3);
+    """
+
+    try:
+        async with dbConnect.acquire() as conn:
+            await conn.execute(query, id, userId, question_id)
+
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error insertando pregunta incorrecta."
+        )

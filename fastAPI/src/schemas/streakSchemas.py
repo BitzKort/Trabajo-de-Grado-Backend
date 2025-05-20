@@ -2,7 +2,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 
-class Racha(BaseModel):
+class Streak(BaseModel):
 
     id:str
     dias: int

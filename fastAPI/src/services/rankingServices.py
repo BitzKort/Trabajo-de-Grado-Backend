@@ -9,11 +9,16 @@ from src.schemas.rankingSchemas import RankingResponse
 
 async def ranking(dbConnect = Depends(get_postgres), token = Depends(get_current_user)) -> List[RankingResponse]:
     
-    ranking = await getRanking(dbConnect)
+    try:
+        ranking = await getRanking(dbConnect)
 
-    if not ranking:
+        if not ranking:
 
-        logger.error("Error retornando el ranking.")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error retornando el ranking.")
+            logger.error("Error retornando el ranking.")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error retornando el ranking.")
+        
+        return ranking
     
-    return ranking
+    except Exception as e:
+
+        raise e

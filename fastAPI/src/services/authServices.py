@@ -1,5 +1,6 @@
 import bcrypt
 import os
+import redis.asyncio as asyncredis
 from fastapi import HTTPException, Depends, status
 from loguru import logger
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -9,7 +10,7 @@ from fastapi_mail import FastMail, MessageSchema
 from tsidpy import TSID
 from src.repository.authRepository import emailCheckerRepository, get_userid_by_email, set_password_recovery, verify_token_recovery, delete_token_recovery 
 from src.repository.userRepository import createUserRepository, update_user_password
-from src.repository.db import get_postgres
+from src.repository.db import get_postgres, get_redis
 from src.schemas.authSchemas import Register, EmailCheckerResponse, UseridEmailResponse, ForgotPasswordRequest, resetPasswordResponse
 from src.conf.emailConf import conf
 
@@ -71,35 +72,48 @@ async def create_password_token(userId: str, dbConnect) -> str:
     return encoded_jwt
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(redisConnect: asyncredis.Redis = Depends(get_redis), token: str = Depends(oauth2_scheme)):
 
     SECRET_KEY = os.getenv("SECRET_KEY")
     ALGORITHM = os.getenv("ALGORITHM")
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="token_invalid",
+        detail="Token no valido",
         headers={"WWW-Authenticate": "Bearer"}
     )
 
     expired_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="token_expired",
+        detail="Token vencido",
         headers={"WWW-Authenticate": "Bearer"}
     )
 
+    deleted_user = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Cuenta borrada.",
+        headers={"WWW-Authenticate": "Bearer"}
+    )
     
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         userId: str = payload.get("sub")
         if userId is None:
             raise credentials_exception
-    
+        
+        if not await verify_deleted_user(userId, redisConnect):
+
+            raise deleted_user
+
     except ExpiredSignatureError:
         raise expired_exception
 
     except JWTError:
         raise credentials_exception
+    
+    except Exception as e:
+        
+        raise e
     
     return userId
 
@@ -112,16 +126,15 @@ async def resetPassword(token:str, newPassword:str, dbConnect = Depends(get_post
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="token_invalid",
+        detail="Token no valido.",
         headers={"WWW-Authenticate": "Bearer"}
     )
 
     expired_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="token_expired",
+        detail="Token vencido.",
         headers={"WWW-Authenticate": "Bearer"}
     )
-
     
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -213,3 +226,28 @@ async def send_password_email(email: str, token: str):
     )
     fm = FastMail(conf)
     await fm.send_message(msg) 
+
+
+async def verify_deleted_user(userId: str, redisConnect) -> bool:
+    """
+    - Usa el key "deleted:users" como un SET de IDs.
+    - Si el key no existe, retorna True indicando de que la cuenta sigue activa.
+    - Si el key existe:
+        • Si el userId ya está en el set, retorna False indicando que la cuenta esta eliminada.
+        • Si no está, lo añade y retorna True indicando que la cuenta esta activa.
+    """
+    key = "deleted:users"
+
+    exists = await redisConnect.exists(key)
+
+    logger.error(exists)
+    if not exists:
+        return True
+
+    is_deleted = await redisConnect.sismember(key, userId)
+    logger.error(userId)
+    logger.error(is_deleted)
+    if is_deleted:
+        return False
+
+    return True

@@ -1,7 +1,8 @@
 
 import asyncpg
+import redis.asyncio as asyncredis
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from src.repository.db import get_postgres
+from src.repository.db import get_postgres, get_redis
 from src.schemas.userSchema import User, UserInfoResponse, UserInfoEntry
 from typing import List, Annotated
 from loguru import logger
@@ -62,5 +63,40 @@ async def update_user(userData = Depends(updateUser)):
 
         logger.error(e)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+    
 
 
+@userRouter.delete("/deleteLogicUser")
+async def test(userId:str,dbConect: asyncpg.Pool = Depends(get_postgres), redisConnect: asyncredis.Redis = Depends(get_redis),token:str = Depends(get_current_user)):
+
+
+    query ="UPDATE users SET deleted = $2 WHERE id = $1;"
+
+    try:
+
+        async with dbConect.acquire() as conn:
+
+            await conn.fetchrow(query, userId, True)        
+        
+        #guardado en redis para verificacion del token        
+        key = "deleted:users"
+
+        exists = await redisConnect.exists(key)
+        if not exists:
+            # crea el SET con el primer miembroe
+            await redisConnect.sadd(key, userId)
+
+        else:
+
+            await redisConnect.sadd(key, userId)
+
+
+        return {"msg": "Usuario eliminado logicamente"}
+
+
+
+    except Exception as e:
+
+        logger.error(e)
+
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)

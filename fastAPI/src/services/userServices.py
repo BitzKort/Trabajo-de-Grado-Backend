@@ -5,7 +5,7 @@ from datetime import timedelta, datetime, date
 from src.schemas.userSchema import UserInfoResponse, UserInfoEntry, UserUpdateModel
 from src.schemas.nplSchemas import CompareRouterResponse
 from src.repository.userRepository import getUserInfo, userUpdate
-from src.repository.streakRepository import update_strike, update_exp
+from src.repository.streakRepository import update_strike, update_exp_and_day
 from src.repository.db import get_postgres
 from src.services.authServices import get_current_user
 from src.schemas.lessonSchemas import SaveLessonEnrtry
@@ -57,11 +57,24 @@ async def updateUser(userData: UserUpdateModel = Depends(), token = Depends(get_
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
     
 
+async def is_consecutive_day(last_activity: datetime) -> bool:
+    now = datetime.now()
+    
+    # Verifica si ya pasaron más de 24 horas
+    if now - last_activity > timedelta(hours=24):
+        return False
+
+    # Verifica si los días son consecutivos (ayer y hoy)
+    yesterday = (now.date() - timedelta(days=1))
+    return last_activity.date() == yesterday
+
 
 async def updateExp(newLastTime, dbConnect, userData:SaveLessonEnrtry = Depends()):
 
     try:
-        await update_exp(userData.userId, userData.newExp, newLastTime, dbConnect)
+        await update_exp_and_day(userData.userId, userData.newExp, newLastTime, dbConnect)
+
+        
     
     except HTTPException:
         raise
@@ -72,6 +85,5 @@ async def updateExp(newLastTime, dbConnect, userData:SaveLessonEnrtry = Depends(
 
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
     
-
 
     

@@ -16,7 +16,7 @@ async def compareAnswer(userCompareData:SentencesCompareEnrty = Depends(), token
 
         predict = str(stsb_model.predict((userCompareData.sentenceNlp, userCompareData.sentenceUser)))
         
-        return SentenceCompareResponse(userId=userCompareData.userId, newExp= userCompareData.newExp, score=predict)
+        return SentenceCompareResponse(userId=userCompareData.userId, newExp= userCompareData.newExp, score=predict, type=userCompareData.type)
     
     except Exception as e:
 

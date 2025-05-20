@@ -12,17 +12,10 @@ class UserInfoResponse(BaseModel):
     ranking:int
     last_activity_date: datetime
 
-class LessonResponse(BaseModel):
-
-    id: str
-    title: str
-    text:str
-    questions:int
 
 class RegisterValidation(BaseModel):
     
     userid:str
-
 
 #schemas for tables
 class User(BaseModel):
@@ -34,13 +27,6 @@ class User(BaseModel):
     name: str
     email: str
     password:str
-
-class Lessons(BaseModel):
-
-    id: str
-    title: str
-    questions:int
-
     
 class UserInfoEntry(BaseModel):
     id:str
