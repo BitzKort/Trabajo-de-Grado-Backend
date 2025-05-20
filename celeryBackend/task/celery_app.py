@@ -1,10 +1,10 @@
-from celery import Celery
-from celery.signals import worker_process_init, worker_ready
-from celery.schedules import crontab
 import os
 import dotenv
 import random
 import time
+from celery import Celery
+from celery.signals import worker_process_init, worker_ready
+from celery.schedules import crontab
 
 dotenv.load_dotenv(dotenv_path="../.env.dev")
 

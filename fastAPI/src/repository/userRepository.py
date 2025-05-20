@@ -1,9 +1,9 @@
 
-from src.schemas.userSchema import UserInfoResponse, RegisterValidation, UserUpdateModel
-from fastapi import HTTPException, status
 import asyncpg
+from fastapi import HTTPException, status
 from loguru import logger
 from tsidpy import TSID
+from src.schemas.userSchema import UserInfoResponse, RegisterValidation, UserUpdateModel
 
 
 
@@ -22,6 +22,8 @@ async def getUserInfo(id, dbConect: asyncpg.Pool) -> UserInfoResponse:
             return UserResponse
         
     except Exception as e:
+
+        logger.error(e)
 
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
 
@@ -47,12 +49,12 @@ async def createUserRepository(userData, dbConect: asyncpg.Pool) -> RegisterVali
                       
            user = RegisterValidation(**dict(new_user))
            
-           logger.success("user created")
+           logger.success("Usuario creado")
 
            return user 
 
     except Exception as e:
-        logger.error(f"Error on insert user: {e}")
+        logger.error(f"Error ingresando el usuario: {e}")
 
 
 
@@ -67,6 +69,8 @@ async def update_user_password(userId, newPassword, dbConect: asyncpg.Pool):
             await conn.fetchrow(query, userId, newPassword)
 
     except Exception as e:
+
+        logger.error(e)
 
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
     
@@ -83,7 +87,7 @@ async def userUpdate(user_data: UserUpdateModel, dbConnect: asyncpg.Pool):
         values.append(user_data.username)
 
     if not fields:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No hay campos para actualizar.")
 
     query = f"UPDATE users SET {', '.join(fields)} WHERE id = $1 RETURNING id"
 
@@ -93,7 +97,9 @@ async def userUpdate(user_data: UserUpdateModel, dbConnect: asyncpg.Pool):
 
             if row is None:
 
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado.")
 
     except Exception as e:
+
+        logger.error(e)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

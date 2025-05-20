@@ -1,7 +1,7 @@
-from fastapi import Depends, HTTPException, status
-from loguru import logger
 import asyncpg
-from src.schemas.authSchemas import EmailCheckerResponse, ForgotPasswordRequest, Token, Id
+from fastapi import HTTPException, status
+from loguru import logger
+from src.schemas.authSchemas import EmailCheckerResponse, Token, Id
 
 async def emailCheckerRepository(email, dbConect: asyncpg.Pool) -> str:
 
@@ -20,14 +20,14 @@ async def emailCheckerRepository(email, dbConect: asyncpg.Pool) -> str:
             
             else:
 
-                logger.warning("user {} not found".format(email))
+                logger.warning("Usuario {} no encontrado".format(email))
 
     except Exception as e:
 
-        logger.warning(f"Error fetching user {e}")
+        logger.warning(f"Error buscando usuario {e}")
 
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error during the user auth"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e
         )
 
 

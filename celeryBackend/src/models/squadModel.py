@@ -1,8 +1,9 @@
-from transformers import pipeline, AutoModelForSeq2SeqLM ,AutoTokenizer
-from loguru import logger
 import os
 import dotenv
 import torch
+from transformers import pipeline, AutoModelForSeq2SeqLM ,AutoTokenizer
+from loguru import logger
+
 
 
 class SquadModel():
@@ -42,7 +43,7 @@ class SquadModel():
     def genrateQA(self, text: str):
 
         response = self.generator(text, max_length=100, truncation = True)[0]['generated_text']
-        logger.success("squad QA generated")
+        logger.success("squad Q&A generado")
 
         return response
 

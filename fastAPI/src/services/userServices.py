@@ -8,6 +8,7 @@ from src.repository.userRepository import getUserInfo, userUpdate
 from src.repository.streakRepository import update_strike, update_exp
 from src.repository.db import get_postgres
 from src.services.authServices import get_current_user
+from src.schemas.lessonSchemas import SaveLessonEnrtry
 
 async def userInfo(userData: UserInfoEntry = Depends(), token:str = Depends(get_current_user), dbConnect = Depends(get_postgres)) -> UserInfoResponse:
 
@@ -16,7 +17,7 @@ async def userInfo(userData: UserInfoEntry = Depends(), token:str = Depends(get_
 
     if not userInfoResult:
 
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Something happend getting the user info")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error retornando la informacion del usuario")
 
     else:
 
@@ -44,28 +45,30 @@ async def updateUser(userData: UserUpdateModel = Depends(), token = Depends(get_
     try:
         await userUpdate(userData, dbConnect)
 
-        return {"msg":"user updated succesfully"}
+        return {"msg":"Usuario actualizado exitosamente."}
     
     except HTTPException:
         raise
 
     except Exception as e:
+
+        logger.error(e)
 
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
     
 
 
-async def updateExp(userId, newExp, newLastTime, score, dbConnect):
+async def updateExp(newLastTime, dbConnect, userData:SaveLessonEnrtry = Depends()):
 
     try:
-        await update_exp(userId, newExp, newLastTime, dbConnect)
-
-        return CompareRouterResponse(userId=userId, score=score, msg="Respuesta correcta")
+        await update_exp(userData.userId, userData.newExp, newLastTime, dbConnect)
     
     except HTTPException:
         raise
 
     except Exception as e:
+
+        logger.error(e)
 
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
     

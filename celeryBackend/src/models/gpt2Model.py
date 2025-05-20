@@ -1,9 +1,12 @@
 
-from transformers import pipeline, set_seed, AutoModelForCausalLM, AutoTokenizer
-from loguru import logger
 import dotenv
 import os
 import torch
+from transformers import pipeline, set_seed, AutoModelForCausalLM, AutoTokenizer
+from loguru import logger
+
+
+
 class Gpt2Model:
     _instance = None
 
@@ -32,16 +35,14 @@ class Gpt2Model:
         self.model  = AutoModelForCausalLM.from_pretrained(self.gpt_path)
         self.tokenizer = AutoTokenizer.from_pretrained(self.gpt_path)
 
-        self.tokenizer.pad_token = self.tokenizer.eos_token
-        self.model.config.pad_token_id = self.tokenizer.eos_token_id
 
-        self.generator = pipeline( 'text-generation', model = self.model, tokenizer= self.tokenizer, device= 0 if torch.cuda.is_available() else -1, pad_token_id=self.tokenizer.eos_token_id)
+        self.generator = pipeline( 'text-generation', model = self.model, tokenizer= self.tokenizer, device= 0 if torch.cuda.is_available() else -1)
 
     def genetateText(self, base_text: str, max_length: int = 150) ->str:
 
         if len(base_text) > 70:
-            base_text = base_text[:70]
-            logger.warning("Texto base truncado a 70 caracteres")
+            base_text = base_text[:55]
+            logger.warning("Texto base truncado a 55 caracteres")
 
         set_seed(40)
         generated_text = self.generator(base_text, max_length =max_length, 
@@ -50,7 +51,7 @@ class Gpt2Model:
                                         )[0]["generated_text"]
         
         
-        logger.success("gpt2 text generated")
+        logger.success("Texto generado")
 
 
         #post procesamiento para evitar malos cierres en el texto

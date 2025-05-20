@@ -1,8 +1,7 @@
-from src.schemas.userSchema import UserInfoResponse
-from fastapi import HTTPException, status
 import asyncpg
+from fastapi import HTTPException, status
 from loguru import logger
-from tsidpy import TSID
+from src.schemas.userSchema import UserInfoResponse
 
 
 async def update_strike(userInfo, dbConect: asyncpg.pool):
@@ -21,6 +20,8 @@ async def update_strike(userInfo, dbConect: asyncpg.pool):
         
     except Exception as e:
 
+        logger.error(e)
+
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
     
 
@@ -35,6 +36,8 @@ async def update_exp(userId, newExp, newLastTime, dbConect: asyncpg.pool):
             await conn.fetchrow(query, userId, newExp, newLastTime)
         
     except Exception as e:
+                
+        logger.error(e)
 
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
 

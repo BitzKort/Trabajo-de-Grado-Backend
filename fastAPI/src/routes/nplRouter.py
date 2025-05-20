@@ -1,34 +1,50 @@
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from loguru import logger
 from src.schemas.nplSchemas import SentenceCompareResponse, CompareRouterResponse
 from src.services.nplServices import compareAnswer
 from src.services.userServices import updateExp
+from src.schemas.lessonSchemas import SaveLessonEnrtry
 from src.repository.db import get_postgres
-from typing import Annotated
 from datetime import datetime
-nplRouter = APIRouter()
 
+
+nplRouter = APIRouter()
 
 @nplRouter.post("/compareResponses", response_model=CompareRouterResponse)
 async def sentenceCompare(userData:SentenceCompareResponse = Depends(compareAnswer), dbConnect = Depends(get_postgres))-> CompareRouterResponse:
 
+    try:
+
+        if userData.score >= 0.7:
+
+            return  CompareRouterResponse(userId=userData.userId, score=userData.score, msg="Respuesta Correcta")
+
+        else:
+            return CompareRouterResponse(userId=userData.userId, score=userData.score, msg="Respuesta Incorrecta")
+        
+    except Exception as e:
+
+        logger.error(e)
+
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+
+@nplRouter.post("/saveLesson", response_model=CompareRouterResponse)
+async def sentenceCompare(userData:SaveLessonEnrtry = Depends(updateExp), dbConnect = Depends(get_postgres))-> CompareRouterResponse:
+
     
-    if userData.score >= 0.7:
+    newLastTime = datetime.today()
 
-        newLastTime = datetime.today()
+    newExp = userData.newExp
 
-        newExp = userData.newExp
+    try:
 
-        try:
+        await updateExp(userData.userId, newExp, newLastTime, dbConnect)
 
-            response = await updateExp(userData.userId, newExp, newLastTime, userData.score, dbConnect)
+        await saveLessonCompleted(userData.userId, userData.lessonId, dbConnect)
 
-            return response
 
-        except Exception:
+    except Exception as e:
 
-            raise
-
-    else:
-        return CompareRouterResponse(userId=userData.userId, score=userData.score, msg="Respuesta Incorrecta")
-
+        logger.error(e)
+        
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)

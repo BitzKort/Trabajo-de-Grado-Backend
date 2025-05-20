@@ -1,6 +1,5 @@
-from sentence_transformers import CrossEncoder
 import os
-import dotenv
+from sentence_transformers import CrossEncoder
 from loguru import logger
 
 
@@ -18,7 +17,7 @@ class StsbModel():
                 cls._instance._loadModel()
 
             except Exception as e:
-                logger.error(f"Error en stsb {str(e)}")
+                logger.error(f"Error al cargar el modelo stsb {str(e)}")
                 raise
 
         return cls._instance
@@ -31,8 +30,8 @@ class StsbModel():
 
     def generatePredict(self, sentence1: str, sentence2: str):
 
-        response = str(self.generator.predict(sentence1, sentence2))
-        logger.success("predict generated")
+        prediction = str(self.generator.predict(sentence1, sentence2))
+        logger.success("Predicción generada")
 
-        return response 
+        return prediction 
 

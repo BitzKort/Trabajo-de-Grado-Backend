@@ -1,128 +1,100 @@
 import os
 import asyncpg
+import redis.asyncio as asyncredis
 from loguru import logger
 from typing import Optional
-import redis.asyncio as asyncredis
+
+
 conn_pool: Optional[asyncpg.Pool] = None
 redis_client_pool: asyncredis.Redis
 
 
-#alembic library
-
-#pruebas de carga 
-
-
 async def init_postgres() -> None:
     """
-    Initialize the PostgreSQL connection pool and create the products table if it doesn't exist.
+        Inicia la conexión a la base de datos.
 
-    This function is meant to be called at the startup of the FastAPI app to
-    initialize a connection pool to PostgreSQL and ensure that the required
-    database schema is in place.
+        Esta función se debe de llamar al iniciar el servidor para inicializar la conexión.
+
+        Retorna
+        -------
+        None
+
     """
     global conn_pool
     try:
-        logger.info("Initializing PostgreSQL connection pool...")
+        logger.info("Iniciando la conexión a la base de datos...")
 
         conn_pool = await asyncpg.create_pool(
             dsn=os.getenv("DATABASE_URL"), min_size=1, max_size=10
         )
-        logger.info("PostgreSQL connection pool created successfully.")
+        logger.info("Conexión a la base de datos creada con éxito.")
 
     except Exception as e:
-        logger.error(f"Error initializing PostgreSQL connection pool: {e}")
-        raise
-    try:
-        async with conn_pool.acquire() as conn:
-            create_table_query = """
-            CREATE TABLE IF NOT EXISTS users (
-                id TEXT PRIMARY KEY,
-                name VARCHAR NOT NULL,
-                username VARCHAR NOT NULL,
-                email VARCHAR NOT NULL,
-                password TEXT NOT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS lessons (
-
-                id TEXT PRIMARY KEY,
-                title VARCHAR NOT NULL,
-                text TEXT NOT NULL,
-                questions INT NOT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS racha (
-            
-                id VARCHAR NOT NULL PRIMARY KEY REFERENCES users(id),
-                dias INT NOT NULL,
-                exp INT NOT NULL
-            );
-            """
-            async with conn.transaction():
-                await conn.execute(create_table_query)
-            logger.info("All tables ensured to exist.")
-
-    except Exception as e:
-        logger.error(f"Error creating tables: {e}")
+        logger.error(f"Error Iniciando la conexión a la base de datos: {e}")
         raise
 
 
 async def get_postgres() -> asyncpg.Pool:
     """
-    Return the PostgreSQL connection pool.
+        Retorna el pool de conexiones PostgreSQL.
 
-    This function returns the connection pool object, from which individual
-    connections can be acquired as needed for database operations. The caller
-    is responsible for acquiring and releasing connections from the pool.
+        Esta función devuelve el objeto pool de conexiones, desde el cual se pueden adquirir
+        Conexiones individuales se pueden adquirir según sea necesario para las operaciones de base de datos.
 
-    Returns
-    -------
-    asyncpg.Pool
-        The connection pool object to the PostgreSQL database.
+        Retorna
+        -------
+        asyncpg.Pool
+            El objeto pool de conexiones a la base de datos PostgreSQL.
 
-    Raises
-    ------
-    ConnectionError
-        Raised if the connection pool is not initialized.
     """
     global conn_pool
     if conn_pool is None:
-        logger.error("Connection pool is not initialized.")
-        raise ConnectionError("PostgreSQL connection pool is not initialized.")
+        logger.error("Conexión no iniciada")
+        raise ConnectionError("Conexión a la base de datos no iniciada.")
     try:
         return conn_pool
     except Exception as e:
-        logger.error(f"Failed to return PostgreSQL connection pool: {e}")
+        logger.error(f"Error retornando la conexión a la base de datos: {e}")
         raise
 
 
 
 async def close_postgres() -> None:
     """
-    Close the PostgreSQL connection pool.
+        Cierra las conexiones de la base de datos.
 
-    This function should be called during the shutdown of the FastAPI app
-    to properly close all connections in the pool and release resources.
+        Esta función debe ser llamada durante el cierre de la aplicación FastAPI
+        para cerrar correctamente todas las conexiones del pool y liberar recursos.
     """
     global conn_pool
     if conn_pool is not None:
         try:
-            logger.info("Closing PostgreSQL connection pool...")
+            logger.info("Cerrando Conexión a la base de datos...")
             await conn_pool.close()
-            logger.info("PostgreSQL connection pool closed successfully.")
+            logger.info("Conexión a la base de datos cerrada con éxito.")
         except Exception as e:
-            logger.error(f"Error closing PostgreSQL connection pool: {e}")
+            logger.error(f"Error cerrando la conexión a la base de datos: {e}")
             raise
     else:
-        logger.warning("PostgreSQL connection pool was not initialized.")
+        logger.warning("Conexión a la base de datos no iniciada.")
 
 
 
 async def init_redis():
 
-    global redis_client_pool 
+    """
+        Inicia la conexión a redis.
 
-    logger.warning(f"initializing redis connection at: {os.getenv("REDIS_BACKEND_URL")}")
+        Esta función se debe de llamar al iniciar el servidor para inicializar la conexión.
+
+        Retorna
+        -------
+        None
+
+    """
+    
+
+    global redis_client_pool 
 
     try:
 
@@ -133,35 +105,53 @@ async def init_redis():
 
         await redis_client_pool.ping()
 
-        logger.success("Redis pool is ready ")
+        logger.success("Conexión a redis creada con éxito.")
 
     except Exception as e:
-        logger.error(f"something happend initializing redis pool: {e}")
+        logger.error(f"Error creando la conexión a redis: {e}")
 
 
 async def get_redis():
 
+    """
+        Retorna la conexión a la base de datos.
+
+        Retorna
+        -------
+            asyncredis.Redis
+            El objeto pool de conexiones a la base de datos PostgreSQL.
+
+    """
+
+
     global redis_client_pool
     if redis_client_pool is None:
-        logger.error("Connection to redis is not initialized.")
-        raise ConnectionError("redis connection is not initialized.")
+        logger.error("Conexión a redis no iniciada.")
+        raise ConnectionError("Conexión a redis no iniciada.")
     try:
         return redis_client_pool
     except Exception as e:
-        logger.error(f"Failed to return redis connection: {e}")
+        logger.error(f"Error retornando la conexión a redis: {e}")
         raise
 
 
 async def close_redis():
 
+    """
+        Cierra las conexiones de redis.
+
+        Esta función debe ser llamada durante el cierre de la aplicación FastAPI
+        para cerrar correctamente todas las conexiones y liberar recursos.
+    """
+
     global redis_client_pool
     if redis_client_pool is None:
-        logger.warning("close_redis() called but redis_client is not initialized.")
+        logger.warning("Conexión a redis no iniciada.")
         return
 
     try:
         await redis_client_pool.aclose()
-        logger.info("Redis connection closed successfully.")
+        logger.info("Conexión a redis creada con éxito.")
     except Exception as e:
-        logger.error(f"Error closing Redis connection: {e}")
+        logger.error(f"Error cerrando la conexión a redis: {e}")
         raise

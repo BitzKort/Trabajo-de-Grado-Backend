@@ -20,6 +20,7 @@ class SentenceCompareResponse(BaseModel):
     newExp:int
     score:float
 
+
 class SentencesCompareEnrty(BaseModel):
     userId:str
     newExp:int

@@ -1,9 +1,7 @@
-from loguru import logger
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-from loguru import logger
 import dotenv
 import os
-from src.schemas.nplSchemas import Distractor
+from loguru import logger
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 class DistractorModel:
 
@@ -16,7 +14,7 @@ class DistractorModel:
             try:
                 cls._instance._loadModel()
             except Exception as e:
-                logger.error(f"Error en Distractor Model: {str(e)}")
+                logger.error(f"Error en Distractor: {str(e)}")
                 raise
         return cls._instance
 
@@ -34,5 +32,9 @@ class DistractorModel:
       outputs = self.model.generate(**inputs, max_new_tokens=128)
       distractors = self.tokenizer.decode(outputs[0], skip_special_tokens=False)
       distractors = distractors.replace(self.tokenizer.pad_token, "").replace(self.tokenizer.eos_token, "")
-      distractors = [Distractor(distractor= y.strip()) for y in distractors.split(self.tokenizer.sep_token)]
-      return distractors
+      distractors = [str(y.strip()) for y in distractors.split(self.tokenizer.sep_token)]
+
+      logger.info(distractors)
+      logger.info(distractors[0])
+
+      return str(distractors[0])

@@ -4,12 +4,11 @@ from src.schemas.nplSchemas import SentencesCompareEnrty, SentenceCompareRespons
 from sentence_transformers import CrossEncoder
 from src.services.authServices import get_current_user
 from loguru import logger
-import re
 
 stsb_path = os.getenv("STSB_MODEL_PATH")
 
 
-async def compareAnswer(userCompareData:SentencesCompareEnrty = Depends(), token: str = Depends(get_current_user) ) -> SentenceCompareResponse:
+async def compareAnswer(userCompareData:SentencesCompareEnrty = Depends(), token: str = Depends(get_current_user)) -> SentenceCompareResponse:
 
     try:
 
@@ -20,6 +19,8 @@ async def compareAnswer(userCompareData:SentencesCompareEnrty = Depends(), token
         return SentenceCompareResponse(userId=userCompareData.userId, newExp= userCompareData.newExp, score=predict)
     
     except Exception as e:
+
+        logger.error(e)
 
         raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
 

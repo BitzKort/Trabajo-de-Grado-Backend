@@ -1,21 +1,18 @@
 import os
 import dotenv
 import random
-import json
 from task.celery_app import celery
+from loguru import logger
+from celery import group, chord
+from datasets import load_from_disk
+from tsidpy import TSID
+from src.repository.lessonRepository import delete_lessons_data
+from src. repository.lessonRepository import insert_questions, insert_lesson
 from src.models.gpt2Model import Gpt2Model
 from src.models.raceModel import RaceModel
 from src.models.squadModel import SquadModel
 from src.models.distractorModel import DistractorModel
-from src.schemas.nplSchemas import QuestionCardResponse, Question, RedisSave
-from typing import List
-from loguru import logger
-from celery import group, chord
-from datasets import load_from_disk
-from src. repository.lessonRepository import insert_lesson
-from tsidpy import TSID
-from src.repository.lessonRepository import delete_lessons_data
-
+from src.schemas.nplSchemas import LessonData, Question, RedisSave
 
 
 dotenv.load_dotenv(dotenv_path="../.env.dev")
@@ -24,7 +21,7 @@ data_path = os.getenv("DATASPLIT_PATH")
 #Este metodo genera un dict con id, url, titulo y texto
 def getDatasetText(dataset) -> list:
     
-    randomId = random.sample(range(1,205328),3)
+    randomId = random.sample(range(1,205328),2)
 
     sample_text = list(map(lambda x: dataset[x],randomId))
 
@@ -53,7 +50,7 @@ def split_qa(text: str) -> tuple[str, str]:
 
 
 @celery.task
-def generate_lesson(dict_text) -> str:
+def generate_lesson(dict_text) -> LessonData:
 
     gpt2 = Gpt2Model()
     raceQA = RaceModel()
@@ -63,7 +60,7 @@ def generate_lesson(dict_text) -> str:
 
     sample_text = dict_text["text"]
 
-    logger.warning("a lesson is generating")
+    logger.warning("Generando leccion.")
 
     final_text = gpt2.genetateText(sample_text)
 
@@ -71,28 +68,29 @@ def generate_lesson(dict_text) -> str:
 
     question_race, answer_race = split_qa(qa_race)
 
-    distractor_race_list = distractor.generate_distractors(question_race, final_text, answer_race)
+    distractor_race = distractor.generate_distractors(question_race, final_text, answer_race)
 
 
-    logger.warning(f"distractor race: {distractor_race_list}")
+    logger.warning(f"distractor race: {distractor_race}")
 
 
     qa_squad = scuadQA.genrateQA(final_text)
 
     question_squad, answer_squad = split_qa(qa_squad)
 
-    distractor_squad_list = distractor.generate_distractors(question_squad, final_text, answer_squad)
+    distractor_squad = distractor.generate_distractors(question_squad, final_text, answer_squad)
 
-    logger.warning(f"distractor squad: {distractor_squad_list}")
+    logger.warning(f"distractor squad: {distractor_squad}")
 
-    response = (QuestionCardResponse(title=dict_text["title"], text=final_text, Questions=[Question(question= qa_race, answer=answer_race, Distractors=distractor_race_list), Question(question= qa_squad, answer=answer_squad,Distractors=distractor_squad_list)]))
+    lessons_generated = LessonData(title=dict_text["title"], text=final_text, Questions=[Question(question= question_race, answer=answer_race, distractor=distractor_race), Question(question= question_squad, answer=answer_squad, distractor=distractor_squad)])
 
     logger.success("leccion generada")
 
-    return response.model_dump_json()
+    return lessons_generated.model_dump() 
+
 
 @celery.task(bind=True)     
-def save_on_dbs(self, results):
+def save_on_dbs(self, lessons):
 
     redis = self.backend.client
 
@@ -110,47 +108,48 @@ def save_on_dbs(self, results):
 
         logger.error(e)
 
-
-
-
     logger.warning("Lecciones en proceso de guardado")
 
+    try:
+        
+        for lesson in lessons:
 
-    #iteramos con el fin de guardar una por una en postgres y redis
-    for result in results:
+            lesson = LessonData(**lesson)
 
-        try:
-            id = str(TSID.create())
+    
+            
+            questions_id = insert_questions(lesson.Questions)
 
-             #para postgress
-            lesson = QuestionCardResponse.model_validate_json(result)
+            lesson_id = insert_lesson(lesson, questions_id)
 
-            insert_lesson(id, lesson)
+
 
             
             #para redis
-            key = f"lesson:{id}"
+            key = f"lesson:{lesson_id}"
 
             all_lesson_ids.append(key)
 
-
-            redisResult = RedisSave(id=id, title=lesson.title, question_count=str(len(lesson.Questions)))
+            redisResult = RedisSave(id=lesson_id, title=lesson.title, question_count=str(len(lesson.Questions)))
 
             pipeline.hset(
                 name=key,
                 mapping=redisResult.model_dump()
                 )
 
-        except Exception as e:
-            
-            logger.error(e)
+
+        
+        if all_lesson_ids:
+            pipeline.sadd("all_lessons", *all_lesson_ids)
+
+        pipeline.execute()
+
+        logger.success("Todas las lecciones han sido guardadas")
     
-    if all_lesson_ids:
-        pipeline.sadd("all_lessons", *all_lesson_ids)
+    except Exception as e:
 
-    pipeline.execute()
-
-    logger.success("Todas las lecciones han sido guardadas")
+        logger.error(e)
+        raise e
 
 @celery.task
 def generate_lessons():

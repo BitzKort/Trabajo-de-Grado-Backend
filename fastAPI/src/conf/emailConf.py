@@ -1,6 +1,7 @@
-from fastapi_mail import ConnectionConfig
 import dotenv
 import os
+from fastapi_mail import ConnectionConfig
+
 
 dotenv.load_dotenv("../.env.dev")
 

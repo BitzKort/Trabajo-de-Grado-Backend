@@ -1,8 +1,9 @@
-from transformers import pipeline, AutoModelForSeq2SeqLM, AutoTokenizer
-from loguru import logger
 import dotenv
 import os
 import torch
+from transformers import pipeline, AutoModelForSeq2SeqLM, AutoTokenizer
+from loguru import logger
+
 
 class RaceModel:
 
@@ -41,7 +42,7 @@ class RaceModel:
     def genarteQA(self, text: str):
 
         response = self.generator(text,max_length=100, truncation=True)[0]['generated_text']
-        logger.success("race Q generated")
+        logger.success("race Q&A generado")
 
         return response
         

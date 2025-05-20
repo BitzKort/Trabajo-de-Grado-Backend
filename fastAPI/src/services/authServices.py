@@ -2,17 +2,17 @@ import bcrypt
 import os
 from fastapi import HTTPException, Depends, status
 from loguru import logger
-from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt, ExpiredSignatureError
 from fastapi_mail import FastMail, MessageSchema
+from tsidpy import TSID
 from src.repository.authRepository import emailCheckerRepository, get_userid_by_email, set_password_recovery, verify_token_recovery, delete_token_recovery 
 from src.repository.userRepository import createUserRepository, update_user_password
 from src.repository.db import get_postgres
 from src.schemas.authSchemas import Register, EmailCheckerResponse, UseridEmailResponse, ForgotPasswordRequest, resetPasswordResponse
 from src.conf.emailConf import conf
-from tsidpy import TSID
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
@@ -143,6 +143,8 @@ async def resetPassword(token:str, newPassword:str, dbConnect = Depends(get_post
     
     except Exception as e:
 
+        logger.error(e)
+
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
     
     return True
@@ -155,7 +157,7 @@ async def authLogin(userData: OAuth2PasswordRequestForm = Depends(), dbConnect =
 
     if not userInfo:
 
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password", headers={"WWW-Authenticate": "Bearer"})
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario o contraseña incorrectos.", headers={"WWW-Authenticate": "Bearer"})
     
     else:
 
@@ -164,7 +166,7 @@ async def authLogin(userData: OAuth2PasswordRequestForm = Depends(), dbConnect =
 
         if not checker:
 
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password", headers={"WWW-Authenticate": "Bearer"})
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario o contraseña incorrectos.", headers={"WWW-Authenticate": "Bearer"})
 
         else:
 
@@ -181,7 +183,7 @@ async def createUserService(userData: Register = Depends(), dbConnect = Depends(
 
     if not registerResponse:
 
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Something went wrong in user creation")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="error en la creacion del usuario")
     
     else:
 

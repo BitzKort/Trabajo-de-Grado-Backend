@@ -1,8 +1,8 @@
+import asyncpg
 from fastapi import HTTPException, status
 from loguru import logger
-import asyncpg
-from src.schemas.rankingSchemas import RankingResponse
 from typing import List
+from src.schemas.rankingSchemas import RankingResponse
 
 
 async def getRanking(dbConnect: asyncpg.pool) -> List[RankingResponse]:
@@ -20,5 +20,7 @@ async def getRanking(dbConnect: asyncpg.pool) -> List[RankingResponse]:
                 return [ RankingResponse(**dict(player)) for player in players]
         
     except Exception as e:
+
+        logger.error(e)
 
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
