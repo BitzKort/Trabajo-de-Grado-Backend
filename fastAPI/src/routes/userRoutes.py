@@ -24,6 +24,8 @@ async def getUserInfo(user_data: UserInfoResponse = Depends(userInfo))-> UserInf
 
         streak_data_verified = await verify_streak(user_info, dbConnect)
 
+        logger.warning(streak_data_verified)
+
         return streak_data_verified
 
     except Exception as e:

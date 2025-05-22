@@ -1,5 +1,6 @@
 
 import asyncpg
+from asyncpg import UniqueViolationError
 from fastapi import HTTPException, status
 from loguru import logger
 from tsidpy import TSID
@@ -32,29 +33,32 @@ async def createUserRepository(userData, dbConect: asyncpg.Pool) -> RegisterVali
 
     id = str(TSID.create())
 
-    query ="INSERT INTO users (id, name, username, email, password) VALUES (($1)::text, $2, $3, $4, $5) RETURNING id AS userid;"
+    query ="INSERT INTO users (id, username, name, email, password) VALUES (($1)::text, $2, $3, $4, $5);"
 
 
     try: 
         async with dbConect.acquire() as conn:
 
-           new_user = await conn.fetchrow(
+            await conn.execute(
                 query,
                 id,
-                userData.name,
                 userData.username,
+                userData.name,
                 userData.email,
                 userData.password
             )
-                      
-           user = RegisterValidation(**dict(new_user))
+
+            return RegisterValidation(**dict(id))
+        
+
+    except UniqueViolationError as e:
            
-           logger.success("Usuario creado")
-
-           return user 
-
+           raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+            
     except Exception as e:
         logger.error(f"Error ingresando el usuario: {e}")
+
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
 
 
 

@@ -34,7 +34,7 @@ async def verify_streak(userInfo, dbConnect ):
         # si no es hoy y no tiene tiempo de 1 dia, se reinicia
         if userInfo.last_activity_date < today - timedelta(days=1):
 
-            userInfo.dias = 1
+            userInfo.days = 0
             userInfo.last_activity_date = today
 
             userInfo = await update_strike(userInfo, dbConnect)

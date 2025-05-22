@@ -15,7 +15,7 @@ class UserInfoResponse(BaseModel):
 
 class RegisterValidation(BaseModel):
     
-    userid:str
+    id:str
 
 #schemas for tables
 class User(BaseModel):

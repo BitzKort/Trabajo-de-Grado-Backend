@@ -1,7 +1,7 @@
 import bcrypt
 import os
 import redis.asyncio as asyncredis
-from fastapi import HTTPException, Depends, status
+from fastapi import HTTPException, Depends, status, Body
 from loguru import logger
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from datetime import datetime, timedelta, timezone
@@ -149,13 +149,15 @@ async def resetPassword(token:str, newPassword:str, dbConnect = Depends(get_post
         await update_user_password(user.id, newCryptPassword, dbConnect)
     
     except ExpiredSignatureError:
+        await delete_token_recovery(user.id, dbConnect)
         raise expired_exception
 
     except JWTError:
+        await delete_token_recovery(user.id, dbConnect)
         raise credentials_exception
     
     except Exception as e:
-
+        await delete_token_recovery(user.id, dbConnect)
         logger.error(e)
 
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
@@ -166,13 +168,10 @@ async def resetPassword(token:str, newPassword:str, dbConnect = Depends(get_post
 async def authLogin(userData: OAuth2PasswordRequestForm = Depends(), dbConnect = Depends(get_postgres)) -> EmailCheckerResponse:
 
     #check if the email exist in order to get the password
-    userInfo = await emailCheckerRepository(userData.username, dbConnect)
 
-    if not userInfo:
+    try: 
+        userInfo = await emailCheckerRepository(userData.username, dbConnect)
 
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario o contraseña incorrectos.", headers={"WWW-Authenticate": "Bearer"})
-    
-    else:
 
         hashed_password = userInfo.password
         checker = await verify_password(userData.password.encode('utf-8'), hashed_password.encode('utf-8'))
@@ -184,37 +183,51 @@ async def authLogin(userData: OAuth2PasswordRequestForm = Depends(), dbConnect =
         else:
 
             return userInfo.id
+    except Exception as e:
+
+        logger.error(e)
+
+        raise e
             
 
-async def createUserService(userData: Register = Depends(), dbConnect = Depends(get_postgres)) -> str:
+async def createUserService(userData: Register, dbConnect ) -> str:
 
-    hashedPassword = crypt(userData.password)
+    logger.warning(userData)
+    try:
+        hashedPassword = await crypt(userData.password)
 
-    userData.password = hashedPassword
+        userData.password = hashedPassword
 
-    userData =  await createUserRepository(userData, dbConnect)
+        registerResponse =  await createUserRepository(userData, dbConnect)
 
-    await createUserStreak(userData.userid, dbConnect)
+        logger.warning(f"a ver que es esto pues: {registerResponse}")
 
-    if not userData:
 
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="error en la creacion del usuario")
+        await createUserStreak(registerResponse.id, dbConnect)
+
+        return registerResponse.id
     
-    else:
-
-        return userData.userid
+    except Exception as e:
+        logger.error(e)
+        raise e
 
 
 
 async def forgotPassword( emailData:ForgotPasswordRequest= Depends(), dbConect = Depends(get_postgres)):
 
-    userData = await get_userid_by_email(emailData.email,dbConect)
+    try:
 
-    return UseridEmailResponse(id=userData.id, email=emailData.email), dbConect
+        logger.warning(emailData)
+        userData = await get_userid_by_email(emailData.email,dbConect)
 
+        return UseridEmailResponse(id=userData.id, email=emailData.email), dbConect
+
+    except Exception as e:
+        logger.error(e)
+        raise e
 
 async def send_password_email(email: str, token: str):
-    reset_link = f"http://localhost:8000/reset-password?token={token}"
+    reset_link = f"http://localhost:8000/changePassword?token={token}"
     msg = MessageSchema(
         subject="Restablece tu contraseña",
         recipients=[email],
@@ -241,14 +254,12 @@ async def verify_deleted_user(userId: str, redisConnect) -> bool:
     key = "deleted:users"
 
     exists = await redisConnect.exists(key)
-
-    logger.error(exists)
+    
     if not exists:
         return True
 
     is_deleted = await redisConnect.sismember(key, userId)
-    logger.error(userId)
-    logger.error(is_deleted)
+
     if is_deleted:
         return False
 

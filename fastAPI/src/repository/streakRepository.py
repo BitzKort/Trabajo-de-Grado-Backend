@@ -2,7 +2,7 @@ import asyncpg
 from fastapi import HTTPException, status
 from loguru import logger
 from src.schemas.userSchema import UserInfoResponse
-
+from src.schemas.streakSchemas import Streak
 
 async def update_strike(userInfo, dbConect: asyncpg.pool):
 
@@ -12,9 +12,9 @@ async def update_strike(userInfo, dbConect: asyncpg.pool):
 
         async with dbConect.acquire() as conn:
 
-            DBResponse = await conn.fetchrow(query, userInfo.id, userInfo.dias, userInfo.exp, userInfo.last_activity_date)
+            DBResponse = await conn.fetchrow(query, userInfo.id, userInfo.days, userInfo.exp, userInfo.last_activity_date)
 
-            UserResponse = UserInfoResponse(**dict(DBResponse))
+            UserResponse = Streak(**dict(DBResponse))
 
             return UserResponse
         

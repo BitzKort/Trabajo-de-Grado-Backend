@@ -14,21 +14,22 @@ async def emailCheckerRepository(email, dbConect: asyncpg.Pool) -> str:
 
             if result:
 
+
                 userData = EmailCheckerResponse(**dict(result))
 
                 return userData
             
             else:
 
-                logger.warning("Usuario {} no encontrado".format(email))
+                logger.error("Usuario {} no encontrado".format(email))
+
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario o contraseña incorrectos")
 
     except Exception as e:
 
         logger.warning(f"Error buscando usuario {e}")
 
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e
-        )
+        raise e
 
 
 async def get_userid_by_email(email, dbConect: asyncpg.Pool) -> Id:
@@ -47,7 +48,7 @@ async def get_userid_by_email(email, dbConect: asyncpg.Pool) -> Id:
             
     except Exception as e:
 
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No hay una cuenta con este correo electrónico.")
     
 
 async def set_password_recovery(email, token, dbConect: asyncpg.Pool) -> Token:
