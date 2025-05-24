@@ -3,7 +3,7 @@ import asyncpg
 import redis.asyncio as asyncredis
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from src.repository.db import get_postgres, get_redis
-from src.schemas.userSchema import User, UserInfoResponse
+from src.schemas.userSchema import User, UserInfoResponse, UserUpdateModel
 from typing import List, Annotated
 from loguru import logger
 from src.services.authServices import get_current_user
@@ -35,16 +35,16 @@ async def getUserInfo(user_data: UserInfoResponse = Depends(userInfo))-> UserInf
 
 
 @userRouter.put("/updateUser", status_code=status.HTTP_200_OK)
-
-async def update_user(userData = Depends(updateUser)):
+async def update_user(userData: UserUpdateModel, userId = Depends(get_current_user), dbConnect:asyncpg.pool = Depends(get_postgres)):
 
     try:
+        userData = await updateUser(userData=userData, userId=userId, dbConnect=dbConnect)
+
         return userData
-    
     except Exception as e:
 
         logger.error(e)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+        raise e
     
 
 

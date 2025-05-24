@@ -8,15 +8,15 @@ from loguru import logger
 stsb_path = os.getenv("STSB_MODEL_PATH")
 
 
-async def compareAnswer(userCompareData:SentencesCompareEnrty = Depends(), userId: str = Depends(get_current_user)) -> SentenceCompareResponse:
+async def compareAnswer(userCompareData:SentencesCompareEnrty, userId: str ) -> SentenceCompareResponse:
 
     try:
 
-        stsb_model = CrossEncoder(model_name=stsb_path)
+        stsb_model = CrossEncoder(model_name_or_path=stsb_path)
 
         predict = str(stsb_model.predict((userCompareData.sentenceNlp, userCompareData.sentenceUser)))
         
-        return SentenceCompareResponse(userId=userId, newExp= userCompareData.newExp, lesson_id=userCompareData.lesson_id, score=predict, type=userCompareData.type)
+        return SentenceCompareResponse(userId=userId, newExp= userCompareData.newExp, lesson_id=userCompareData.lesson_id, question_id=userCompareData.question_id, score=predict, type=userCompareData.type)
     
     except Exception as e:
 

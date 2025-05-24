@@ -8,3 +8,7 @@ class Streak(BaseModel):
     dias: int
     exp: int
     last_activity_date: datetime
+
+class LastActivityDate(BaseModel):
+
+    last_activity_date: datetime

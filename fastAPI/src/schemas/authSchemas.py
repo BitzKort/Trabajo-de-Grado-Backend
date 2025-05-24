@@ -44,6 +44,11 @@ class resetPasswordResponse(BaseModel):
 
     msg:str
 
+class resetPasswordEntry(BaseModel):
+
+    token:str
+    newPassword:str
+
 class Id(BaseModel):
     id:str
 

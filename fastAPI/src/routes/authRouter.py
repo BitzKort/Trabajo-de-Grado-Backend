@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Response
-from src.schemas.authSchemas import AuthResponse, Id, Register
+from src.schemas.authSchemas import AuthResponse, Id, Register, resetPasswordEntry
 from loguru import logger
 from src.services.authServices import authLogin, create_token, createUserService, forgotPassword, send_password_email, create_password_token, resetPassword
 from src.repository.db import get_postgres
@@ -66,19 +66,18 @@ async def forgot_password(data = Depends(forgotPassword)):
     
     except Exception as e:
 
-        logger.error(e)
-
         raise e
 
 
 
 
 @authRouter.put("/reset-password", status_code=status.HTTP_200_OK)
-async def reset_password(data: Id = Depends(resetPassword)):
+async def reset_password(userData: resetPasswordEntry, dbConnect = Depends(get_postgres)):
 
 
     try:
-
+        data = await resetPassword(token=userData.token, newPassword=userData.newPassword, dbConnect=dbConnect)
+        
         if not data:
 
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error en el cambio de la contraseña.")

@@ -10,7 +10,7 @@ from datetime import datetime
 
 async def getUserInfo(id, dbConect: asyncpg.Pool) -> UserInfoResponse:
     
-    query =" SELECT id, name, username, exp, days, last_activity_date, ranking FROM ( SELECT u.id, u.name, u.username, s.exp, s.days, s.last_activity_date, DENSE_RANK() OVER (ORDER BY s.exp DESC) AS ranking FROM streaks s INNER JOIN users u ON s.id = u.id) t WHERE id = $1;"
+    query = "SELECT id, name, username, exp, days, last_activity_date, CASE WHEN exp = 0 THEN 0 ELSE ranking END AS ranking FROM (SELECT u.id, u.name, u.username, s.exp, s.days, s.last_activity_date, DENSE_RANK() OVER (ORDER BY s.exp DESC) AS ranking FROM streaks s INNER JOIN users u  ON s.id = u.id WHERE u.deleted = FALSE) t WHERE id = $1;"
 
     try:
 
@@ -48,15 +48,24 @@ async def createUserRepository(userData, dbConect: asyncpg.Pool) -> RegisterVali
                 userData.password
             )
 
-            return RegisterValidation(**dict(id))
+            return RegisterValidation(id=id)
         
 
     except UniqueViolationError as e:
-           
-           raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+
+            if e.constraint_name == "user_email_key" or e.constraint_name == "users_email_key" :
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="El correo ya está registrado."
+            )
+
+            elif e.constraint_name == "users_username_key" or e.constraint_name == "user_username_key":
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="El Username ya está registrado."
+            )
             
     except Exception as e:
-        logger.error(f"Error ingresando el usuario: {e}")
 
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
 
@@ -121,6 +130,15 @@ async def userUpdate(user_data: UserUpdateModel, userId: str, dbConnect: asyncpg
             if row is None:
 
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado.")
+
+    except UniqueViolationError as e:
+
+            if e.constraint_name == "users_username_key" or e.constraint_name == "user_username_key":
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="El Username ya está registrado."
+            )
+        
 
     except Exception as e:
 

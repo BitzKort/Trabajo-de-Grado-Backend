@@ -16,7 +16,7 @@ async def verify_all_valid_lessons(redisConnect: asyncredis.Redis = Depends(get_
         
         if not await redisConnect.exists(lessons_key):
 
-            raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail="nuevas lecciones se estan generandos")
+             return VerifyAVLResponse(status="success", pending_lessons=[], total_pending=0)
         
 
         all_lessons = await redisConnect.smembers(lessons_key)

@@ -1,5 +1,6 @@
 import bcrypt
 import os
+import asyncpg
 import redis.asyncio as asyncredis
 from fastapi import HTTPException, Depends, status, Body
 from loguru import logger
@@ -53,23 +54,32 @@ async def create_token(user_data: str, type:str) -> str:
 
 async def create_password_token(userId: str, dbConnect) -> str:
 
-    SECRET_KEY = os.getenv("SECRET_KEY")
-    ALGORITHM = os.getenv("ALGORITHM")
+    try:
+        SECRET_KEY = os.getenv("SECRET_KEY")
+        ALGORITHM = os.getenv("ALGORITHM")
 
-    tokenId = str(TSID.create())
- 
-    token_expires = timedelta(minutes=6) 
+        RECOVERY_TIME = int(os.getenv("RECOVERY_TOKEN_MINUTES"))
 
-    token_saved = await set_password_recovery(userId,tokenId, dbConnect)
+        tokenId = str(TSID.create())
+    
+        token_expires = timedelta(minutes=RECOVERY_TIME) 
 
-    to_encode = {"sub": token_saved.token}
-    if token_expires:
-        expire = datetime.now(timezone.utc) + token_expires
+        token_saved = await set_password_recovery(userId,tokenId, dbConnect)
 
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(claims= to_encode, key= SECRET_KEY, algorithm=ALGORITHM)
+        to_encode = {"sub": token_saved.token}
+        if token_expires:
+            expire = datetime.now(timezone.utc) + token_expires
 
-    return encoded_jwt
+        to_encode.update({"exp": expire})
+        encoded_jwt = jwt.encode(claims= to_encode, key= SECRET_KEY, algorithm=ALGORITHM)
+
+        return encoded_jwt
+    
+    except Exception as e:
+
+        logger.error(e)
+
+        raise e
 
 
 async def get_current_user(redisConnect: asyncredis.Redis = Depends(get_redis), token: str = Depends(oauth2_scheme)):
@@ -119,7 +129,7 @@ async def get_current_user(redisConnect: asyncredis.Redis = Depends(get_redis), 
 
 
 
-async def resetPassword(token:str, newPassword:str, dbConnect = Depends(get_postgres)) ->resetPasswordResponse:
+async def resetPassword(token:str, newPassword:str, dbConnect:asyncpg.Pool ) ->resetPasswordResponse:
 
     SECRET_KEY = os.getenv("SECRET_KEY")
     ALGORITHM = os.getenv("ALGORITHM")
@@ -136,6 +146,7 @@ async def resetPassword(token:str, newPassword:str, dbConnect = Depends(get_post
         headers={"WWW-Authenticate": "Bearer"}
     )
     
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         password_token: str = payload.get("sub")
@@ -148,19 +159,19 @@ async def resetPassword(token:str, newPassword:str, dbConnect = Depends(get_post
 
         await update_user_password(user.id, newCryptPassword, dbConnect)
     
-    except ExpiredSignatureError:
-        await delete_token_recovery(user.id, dbConnect)
-        raise expired_exception
-
     except JWTError:
-        await delete_token_recovery(user.id, dbConnect)
         raise credentials_exception
+
+    except ExpiredSignatureError:
+        raise expired_exception
     
+
     except Exception as e:
-        await delete_token_recovery(user.id, dbConnect)
+
         logger.error(e)
 
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+        raise e
+
     
     return True
 
@@ -192,16 +203,12 @@ async def authLogin(userData: OAuth2PasswordRequestForm = Depends(), dbConnect =
 
 async def createUserService(userData: Register, dbConnect ) -> str:
 
-    logger.warning(userData)
     try:
         hashedPassword = await crypt(userData.password)
 
         userData.password = hashedPassword
 
         registerResponse =  await createUserRepository(userData, dbConnect)
-
-        logger.warning(f"a ver que es esto pues: {registerResponse}")
-
 
         await createUserStreak(registerResponse.id, dbConnect)
 
@@ -227,7 +234,7 @@ async def forgotPassword( emailData:ForgotPasswordRequest= Depends(), dbConect =
         raise e
 
 async def send_password_email(email: str, token: str):
-    reset_link = f"http://localhost:8000/changePassword?token={token}"
+    reset_link = f"http://localhost:5173/changePassword?token={token}"
     msg = MessageSchema(
         subject="Restablece tu contraseña",
         recipients=[email],

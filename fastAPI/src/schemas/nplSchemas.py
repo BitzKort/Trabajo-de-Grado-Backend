@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import List
-
+from datetime import datetime
 #schemas for router responses
 
 class Question(BaseModel):
@@ -18,21 +18,26 @@ class SentenceCompareResponse(BaseModel):
 
     userId:str
     lesson_id:str
+    question_id:str
     newExp:int
-    score:float
-    type:str
+    score:str
+    type:int
 
 
 class SentencesCompareEnrty(BaseModel):
     
     lesson_id:str
+    question_id:str
     newExp:int
     sentenceNlp: str
     sentenceUser:str
-    type:str
+    type:int
 
 class CompareRouterResponse(BaseModel):
 
+    status:str
     userId:str
-    score:float
+    score:str
     msg:str
+
+

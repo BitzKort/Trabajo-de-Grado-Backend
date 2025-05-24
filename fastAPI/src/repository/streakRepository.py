@@ -2,7 +2,7 @@ import asyncpg
 from fastapi import HTTPException, status
 from loguru import logger
 from src.schemas.userSchema import UserInfoResponse
-from src.schemas.streakSchemas import Streak
+from src.schemas.streakSchemas import Streak, LastActivityDate
 
 async def update_strike(userInfo, dbConect: asyncpg.pool):
 
@@ -26,21 +26,26 @@ async def update_strike(userInfo, dbConect: asyncpg.pool):
 
 
 
-async def get_last_activity_day(userId: str, dbConnect):
-    query = """
-        SELECT last_activity_day FROM users WHERE id = $1;
-    """
+async def get_last_activity_date(userId: str, dbConnect):
+    
+    
+    query = "SELECT last_activity_date FROM streaks WHERE id = $1;"
 
     try:
         async with dbConnect.acquire() as conn:
-            row = await conn.fetchrow(query, userId)
-            if row:
-                return row["last_activity_day"]
+            old_last_time = await conn.fetchrow(query, userId)
+            
+            if old_last_time:
+                return LastActivityDate(**dict(old_last_time))
             else:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Usuario no encontrado."
+                    detail="racha no encontrada."
                 )
+    except HTTPException:
+
+        raise
+
 
     except Exception as e:
         logger.error(e)

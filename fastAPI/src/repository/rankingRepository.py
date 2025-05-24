@@ -7,7 +7,7 @@ from src.schemas.rankingSchemas import RankingResponse
 
 async def getRanking(dbConnect: asyncpg.pool) -> List[RankingResponse]:
 
-    query =" SELECT u.username, r.exp, r.days FROM streaks r INNER JOIN users u ON r.id = u.id ORDER BY r.exp DESC LIMIT 10;"
+    query =" SELECT u.username, r.exp, r.days FROM streaks r INNER JOIN users u ON r.id = u.id WHERE r.exp > 0 ORDER BY r.exp DESC LIMIT 10;"
 
     try:
 

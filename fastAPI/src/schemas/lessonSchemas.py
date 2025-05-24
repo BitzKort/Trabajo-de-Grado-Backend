@@ -14,7 +14,7 @@ class SaveLessonEnrtry(BaseModel):
 #for lesson id router
 
 class LessonWithQuestions(BaseModel):
-    id:str
+    lesson_id:str
     title: str
     text: str
     question_id:str
@@ -29,15 +29,13 @@ class ListLessonWQ(BaseModel):
 #for failed questions router
 
 class IncorrectQuestionResponse(BaseModel):
-    id: str
+    lesson_id: str
+    question_id:str
     title: str
     text: str
     question_text: str
     answer: str
     distractor: str
-
-    class Config:
-        populate_by_name = True
 
 class VerifyAVLResponse(BaseModel):
 

@@ -80,13 +80,18 @@ async def verify_token_recovery(token_recovery, dbConect: asyncpg.Pool) -> Id:
 
             response = await conn.fetchrow(query, token_recovery)
 
+
+            if not response:
+
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="URL no valida.")
+
             response = Id(**dict(response))
 
             return response
             
     except Exception as e:
 
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+        raise e
     
 
 async def delete_token_recovery(email, dbConect: asyncpg.Pool) -> Token:

@@ -26,7 +26,7 @@ async def lessonId( lessonData: VerifyVLResponse = Depends(verify_valid_lesson),
         lessonSplit = lessonData.lessonId.split(":")
 
         _, lessonPostgresId = lessonSplit
-        query ="SELECT l.id, l.title, l.text, q.id AS question_id, q.question_text, q.answer, q.distractor FROM lessons l CROSS JOIN jsonb_array_elements_text(l.questions_id) AS p(id) JOIN questions q ON q.id = p.id::text WHERE l.id = $1;"
+        query ="SELECT l.id AS lesson_id, l.title, l.text, q.id AS question_id, q.question_text, q.answer, q.distractor FROM lessons l CROSS JOIN jsonb_array_elements_text(l.questions_id) AS p(id) JOIN questions q ON q.id = p.id::text WHERE l.id = $1;"
 
         questionList =[]
 
@@ -70,24 +70,24 @@ async def get_lesson_keys(lessonData: VerifyAVLResponse = Depends(verify_all_val
 async def get_failed_questions(dbConnect: asyncpg.pool = Depends(get_postgres), userId: str = Depends(get_current_user)) -> IncorrectQuestionResponse:
 
     
-    query = """SELECT l.id, l.title, l.text, q.question_text, q.answer, q.distractor FROM incorrect_questions iq
+    query = """SELECT l.id AS lesson_id, q.id AS question_id, l.title, l.text, q.question_text, q.answer, q.distractor FROM incorrect_questions iq
                 JOIN questions q ON iq.question_id = q.id JOIN lessons l ON EXISTS ( SELECT 1 FROM 
                 jsonb_array_elements_text(l.questions_id) AS elem WHERE elem = q.id)
                 WHERE iq.user_id = $1 ORDER BY RANDOM() LIMIT 1;
 """
-
-
     try:
 
         async with dbConnect.acquire() as conn:
 
-            results = await conn.fetch(query, userId)
+            results = await conn.fetchrow(query, userId)
+
+            logger.warning(results)
 
             if not results:
 
-                logger.warning("El usuario no tiene preguntas incorrectas.")
+                logger.warning("No tienes preguntas incorrectas.")
 
-                raise HTTPException(status_code=status.HTTP_200_OK, detail="El usuario no tiene preguntas incorrectas.")
+                raise HTTPException(status_code=status.HTTP_200_OK, detail="No tienes preguntas incorrectas.")
             
             
             return IncorrectQuestionResponse(**dict(results))

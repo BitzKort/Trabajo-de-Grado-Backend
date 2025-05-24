@@ -3,10 +3,11 @@ from loguru import logger
 from fastapi import HTTPException, status, Depends
 from datetime import timedelta, datetime, date
 import redis.asyncio as asyncredis
+import asyncpg
 from src.schemas.userSchema import UserInfoResponse, UserUpdateModel
 from src.schemas.nplSchemas import CompareRouterResponse
 from src.repository.userRepository import getUserInfo, userUpdate
-from src.repository.streakRepository import update_strike, update_exp, get_last_activity_day, update_days
+from src.repository.streakRepository import update_strike, update_exp, get_last_activity_date, update_days
 from src.repository.db import get_postgres
 from src.services.authServices import get_current_user
 from src.schemas.lessonSchemas import SaveLessonEnrtry
@@ -41,8 +42,8 @@ async def verify_streak(userInfo, dbConnect ):
     
     return userInfo
 
-async def updateUser(userData: UserUpdateModel = Depends(), userId = Depends(get_current_user), dbConnect = Depends(get_postgres)):
-
+async def updateUser(userData: UserUpdateModel, userId: str, dbConnect: asyncpg.pool):
+    logger.warning(userData)
     try:
         await userUpdate(userData, userId, dbConnect)
 
@@ -55,7 +56,7 @@ async def updateUser(userData: UserUpdateModel = Depends(), userId = Depends(get
 
         logger.error(e)
 
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+        raise e
     
 
 async def is_consecutive_day(last_activity: datetime) -> bool:
@@ -70,18 +71,18 @@ async def is_consecutive_day(last_activity: datetime) -> bool:
     return last_activity.date() == yesterday
 
 
-async def updateExp(newLastTime, dbConnect, userData:SaveLessonEnrtry = Depends()):
+async def updateExp(userId: str, newExp:str, newLastTime, dbConnect):
 
     try:
 
-        old_last_time = await get_last_activity_day(userData.userId, dbConnect)
+        old_last_time = await get_last_activity_date(userId, dbConnect)
 
         #si es un dia valido para que aumente el dia en la racha
-        if await is_consecutive_day(old_last_time):
+        if await is_consecutive_day(old_last_time.last_activity_date):
 
-            await update_days(userData.userId, dbConnect)
+            await update_days(userId, dbConnect)
 
-        await update_exp(userData.userId, userData.newExp, newLastTime, dbConnect)
+        await update_exp(userId, newExp, newLastTime, dbConnect)
 
 
         

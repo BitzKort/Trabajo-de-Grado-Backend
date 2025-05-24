@@ -26,7 +26,7 @@ class StsbModel():
 
         stsb_path = os.getenv("STSB_MODEL_PATH")
 
-        self.generator = CrossEncoder(model_name=stsb_path)
+        self.generator = CrossEncoder(model_name_or_path=stsb_path)
 
     def generatePredict(self, sentence1: str, sentence2: str):
 
