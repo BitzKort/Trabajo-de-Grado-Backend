@@ -9,6 +9,20 @@ from datetime import datetime
 
 
 async def getUserInfo(id, dbConect: asyncpg.Pool) -> UserInfoResponse:
+
+
+    """
+        Método para obtener la informacion general del usuario.
+
+        Retorna
+        -------
+        Objeto UserInfoResponse
+
+        Excepciones
+        -------
+        - Excepciones de conexión a la bd.
+
+    """
     
     query = "SELECT id, name, username, exp, days, last_activity_date, CASE WHEN exp = 0 THEN 0 ELSE ranking END AS ranking FROM (SELECT u.id, u.name, u.username, s.exp, s.days, s.last_activity_date, DENSE_RANK() OVER (ORDER BY s.exp DESC) AS ranking FROM streaks s INNER JOIN users u  ON s.id = u.id WHERE u.deleted = FALSE) t WHERE id = $1;"
 
@@ -30,6 +44,20 @@ async def getUserInfo(id, dbConect: asyncpg.Pool) -> UserInfoResponse:
 
 
 async def createUserRepository(userData, dbConect: asyncpg.Pool) -> RegisterValidation:
+
+    """
+        Método para crear un usuaro.
+
+        Retorna
+        -------
+        Un objeto RegisterValidation que contiene el id del usaurio registrado.
+
+        Excepciones
+        -------
+        - 409 CONFLICT si el username o el email ya están siendo utilizados por otro usuario.
+        - Excepciones de conexión a la bd.
+
+    """
 
     id = str(TSID.create())
 
@@ -73,6 +101,19 @@ async def createUserRepository(userData, dbConect: asyncpg.Pool) -> RegisterVali
 
 async def createUserStreak(userId: str, dbConnect):
     
+    """
+        Método para crear la racha del usuario.
+
+        Retorna
+        -------
+        None
+
+        Excepciones
+        -------
+        - Excepciones de conexión a la bd.
+
+    """
+
 
     new_last_date = datetime.today()
     query = """
@@ -92,6 +133,19 @@ async def createUserStreak(userId: str, dbConnect):
 
 async def update_user_password(userId, newPassword, dbConect: asyncpg.Pool):
 
+    """
+        Método para actualizar la contraseña del usuario.
+
+        Retorna
+        -------
+        None
+
+        Excepciones
+        -------
+        - Excepciones de conexión a la bd.
+
+    """
+
     query ="UPDATE users SET password = $2 WHERE id = $1;"
 
     try:
@@ -108,6 +162,22 @@ async def update_user_password(userId, newPassword, dbConect: asyncpg.Pool):
     
 
 async def userUpdate(user_data: UserUpdateModel, userId: str, dbConnect: asyncpg.Pool):
+
+    """
+        Método para actualizar el name o el username del usuario.
+
+        Retorna
+        -------
+        None
+
+        Excepciones
+        -------
+        - 404 Bad Request si ingresan valores vacios.
+        - 409 CONFLICT 
+        - Excepciones de conexión a la bd.
+
+    """
+
     fields = []
     values = []
 
@@ -148,6 +218,22 @@ async def userUpdate(user_data: UserUpdateModel, userId: str, dbConnect: asyncpg
 
 
 async def deleteFromIncorrect(userId: str, question_id: str, dbConnect):
+    
+
+    """
+        Método para eliminar una pregunta del pool de preguntas incorrectas del usuario.
+
+        Retorna
+        -------
+        None
+
+        Excepciones
+        -------
+        - Excepciones de conexión a la bd.
+
+    """
+
+
     query = """
         DELETE FROM incorrect_questions
         WHERE user_id = $1 AND question_id = $2;
@@ -167,6 +253,21 @@ async def deleteFromIncorrect(userId: str, question_id: str, dbConnect):
 
 
 async def insertIntoIncorrect(userId: str, question_id: str, dbConnect):
+
+
+    """
+        Método para ingresar una pregunta del pool de preguntas incorrectas del usuario.
+
+        Retorna
+        -------
+        None
+
+        Excepciones
+        -------
+        - Excepciones de conexión a la bd.
+
+    """
+
  
     id = str(TSID.create())
 
@@ -184,4 +285,39 @@ async def insertIntoIncorrect(userId: str, question_id: str, dbConnect):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error insertando pregunta incorrecta."
+        )
+
+async def verify_user(id:str, dbConnect: asyncpg.Pool) -> bool:
+   
+   
+    """
+        Método para verificar la existencia de un usuario.
+
+        Retorna
+        -------
+        None
+
+        Excepciones
+        -------
+        - Excepciones de conexión a la bd.
+
+    """
+    
+    query = """
+        SELECT EXISTS(
+            SELECT 1 FROM users 
+            WHERE id = $1
+        )
+    """
+
+    try:
+        async with dbConnect.acquire() as conn:
+            exists = await conn.fetchval(query,id)
+            return exists
+            
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al verificar usuario existente."
         )

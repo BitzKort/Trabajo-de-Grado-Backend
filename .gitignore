@@ -10,7 +10,7 @@ celeryBackend/celery
 #model and dataset folders
 celeryBackend/dataset
 celeryBackend/dataset*
-celeryBackend/nplModules
+nplModules*
 
 # files created by python
 *.pyc

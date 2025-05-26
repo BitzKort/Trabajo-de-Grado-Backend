@@ -6,6 +6,19 @@ from src.schemas.streakSchemas import Streak, LastActivityDate
 
 async def update_strike(userInfo, dbConect: asyncpg.pool):
 
+    """
+        Método para actualizar la racha del usuario.
+
+        Retorna
+        -------
+        Un objeto Streak con los datos de la racha actualizados.
+
+        Excepciones
+        -------
+        - Excepciones de conexión a la bd.
+
+    """
+
     query =" UPDATE streaks SET days = $2, exp = $3, last_activity_date = $4 WHERE id = $1 RETURNING * ;"
 
     try:
@@ -27,6 +40,20 @@ async def update_strike(userInfo, dbConect: asyncpg.pool):
 
 
 async def get_last_activity_date(userId: str, dbConnect):
+
+    """
+        Método para obtener la fecha de la última actividad del usuario (fecha de la última pregunta realizada)
+
+        Retorna
+        -------
+        Un objeto LastActivityDate con la última fecha registrada de la racha del usuario.
+
+        Excepciones
+        -------
+        - 404 Not Found si la racha no fue encontrada.
+        - Excepciones de conexión a la bd.
+
+    """
     
     
     query = "SELECT last_activity_date FROM streaks WHERE id = $1;"
@@ -56,6 +83,20 @@ async def get_last_activity_date(userId: str, dbConnect):
 
 
 async def update_days(user_id: str, dbConnect):
+
+    """
+        Método para actualizar los dias en la racha del usuario.
+
+        Retorna
+        -------
+        None
+
+        Excepciones
+        -------
+        - Excepciones de conexión a la bd.
+
+    """
+
    
     query = """
         UPDATE streaks SET days = days + 1 WHERE id = $1;
@@ -75,6 +116,18 @@ async def update_days(user_id: str, dbConnect):
 
 async def update_exp(userId, newExp, newLastTime, dbConect: asyncpg.pool):
 
+    """
+        Método para actualizar la experiencia del usuario.
+
+        Retorna
+        -------
+        None
+
+        Excepciones
+        -------
+        - Excepciones de conexión a la bd.
+
+    """
 
     query =" UPDATE streaks SET exp = exp + $2, last_activity_date = $3 WHERE id = $1;"
 

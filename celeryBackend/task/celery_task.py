@@ -3,9 +3,8 @@ import dotenv
 import random
 from task.celery_app import celery
 from loguru import logger
-from celery import group, chord
+from celery import chord
 from datasets import load_from_disk
-from tsidpy import TSID
 from src.repository.lessonRepository import delete_lessons_data
 from src. repository.lessonRepository import insert_questions, insert_lesson
 from src.models.gpt2Model import Gpt2Model
@@ -18,10 +17,48 @@ from src.schemas.nplSchemas import LessonData, Question, RedisSave
 dotenv.load_dotenv(dotenv_path="../.env.dev")
 data_path = os.getenv("DATASPLIT_PATH")
 
-#Este metodo genera un dict con id, url, titulo y texto
-def getDatasetText(dataset) -> list:
+def getDatasetTextRetry() -> str:
+
+
+    """
+        Metodo para generar un numero dentro del rango del dataset y obtener un texto de muestra.
+        en caso de reintentar la generacion de una leccion.
+
+        Retorna
+        -------
+
+        String: Texto de muestra.
     
-    randomId = random.sample(range(1,205328),2)
+    """
+
+    dataset = load_from_disk(data_path)
+    
+    
+    local_random = random.Random()
+    local_random.seed(os.urandom(16)) 
+    
+    random_ids = local_random.sample(range(1, 205328), 10)
+    samples = [dataset[id] for id in random_ids]
+    selected_text = local_random.choice(samples)
+    
+    return selected_text
+
+def getDatasetText() -> list:
+
+    """
+        Metodo para generar un 6 numeros dentro del rango del dataset y obtener los textos de muestra.
+        en caso de reintentar la generacion de una leccion.
+
+        Retorna
+        -------
+
+        Lista de textos de muestra.
+    
+    """
+
+    dataset = load_from_disk(data_path)
+    
+    randomId = random.sample(range(1,205328),6)
 
     sample_text = list(map(lambda x: dataset[x],randomId))
 
@@ -29,17 +66,27 @@ def getDatasetText(dataset) -> list:
 
 
 def split_qa(text: str) -> tuple[str, str]:
-    # Definir posibles separadores en orden de prioridad
+
+    """
+        Metodo para separar la pregunta de la respuesta generadas por los modelos race y squad
+
+        Retorna
+        -------
+
+        pregunta y respuesta en tupla.
+    """
+
+   
     separators = ['? ', ' . ']
     
     for sep in separators:
         last_index = text.rfind(sep)
         if last_index != -1:
-            # Encontramos el separador
+           
             question = text[:last_index].strip()
             answer = text[last_index+len(sep):].strip()
             
-            # Eliminar posibles signos de interrogación finales en la pregunta
+           
             if question.endswith('?'):
                 question = question[:-1].strip()
                 
@@ -49,48 +96,91 @@ def split_qa(text: str) -> tuple[str, str]:
     return text.strip(), ''
 
 
-@celery.task
-def generate_lesson(dict_text) -> LessonData:
+@celery.task(bind=True, max_retries=5)
+def generate_lesson(self, dict_text) -> LessonData:
+
+    """
+        Metodo para generar las lecciones y verificar que sean adecuadas
+        Una leccion es adecuada cuando se genera al menos un distractor diferente a la respuesta y,
+        que el texto generado sea de minimo 100 caracteres.
+
+        Retorna
+        -------
+        Objeto LessonData con la informacion de la leccion
+    """
+
 
     gpt2 = Gpt2Model()
     raceQA = RaceModel()
-    scuadQA = SquadModel()
+    squadQA = SquadModel()
     distractor = DistractorModel()
 
+    logger.warning("Generando lección.")
 
-    sample_text = dict_text["text"]
+    try:
+        sample_text = dict_text["text"]
+        final_text = gpt2.generateText(sample_text)
+ 
+        # Generar QA para Race
+        qa_race = raceQA.generateQA(final_text)
+        question_race, answer_race = split_qa(qa_race)
+        
+        # Validar Race
+        if not question_race.strip() or not answer_race.strip():
+            logger.warning("QA Race vacío. Reintentando...")
+            raise ValueError("Race QA vacío")
+            
+        distractor_race = distractor.generate_distractors(question_race, final_text, answer_race)
+        if distractor_race.lower() == answer_race.lower():
+            logger.warning("Distractor Race igual a respuesta. Reintentando...")
+            raise ValueError("Distractor Race inválido")
+ 
+        # Generar QA para Squad
+        qa_squad = squadQA.generateQA(final_text)
+        question_squad, answer_squad = split_qa(qa_squad)
+         
+        # Validar Squad
+        if not question_squad.strip() or not answer_squad.strip():
+            logger.warning("QA Squad vacío. Reintentando...")
+            raise ValueError("Squad QA vacío")
+            
+        distractor_squad = distractor.generate_distractors(question_squad, final_text, answer_squad)
+        if distractor_squad.lower() == answer_squad.lower():
+            logger.warning("Distractor Squad igual a respuesta. Reintentando...")
+            raise ValueError("Distractor Squad inválido")
 
-    logger.warning("Generando leccion.")
+        # Crear lección si pasa todas las validaciones
+        lessons_generated = LessonData(
+            title=dict_text["title"],
+            text=final_text,
+            Questions=[
+                Question(question=question_race, answer=answer_race, distractor=distractor_race),
+                Question(question=question_squad, answer=answer_squad, distractor=distractor_squad)
+            ]
+        )
+        
+        logger.success("Lección generada con éxito")
+        return lessons_generated.model_dump()
 
-    final_text = gpt2.genetateText(sample_text)
-
-    qa_race = raceQA.genarteQA(final_text)
-
-    question_race, answer_race = split_qa(qa_race)
-
-    distractor_race = distractor.generate_distractors(question_race, final_text, answer_race)
-
-
-    logger.warning(f"distractor race: {distractor_race}")
-
-
-    qa_squad = scuadQA.genrateQA(final_text)
-
-    question_squad, answer_squad = split_qa(qa_squad)
-
-    distractor_squad = distractor.generate_distractors(question_squad, final_text, answer_squad)
-
-    logger.warning(f"distractor squad: {distractor_squad}")
-
-    lessons_generated = LessonData(title=dict_text["title"], text=final_text, Questions=[Question(question= question_race, answer=answer_race, distractor=distractor_race), Question(question= question_squad, answer=answer_squad, distractor=distractor_squad)])
-
-    logger.success("leccion generada")
-
-    return lessons_generated.model_dump() 
+    except Exception as e:
+        logger.warning(f"Error generando lección: {str(e)}")
+        new_dict_text = getDatasetTextRetry()
+        logger.info(f"Reintentando con nuevo dict_text: {new_dict_text}")
+        self.retry(args=[new_dict_text], countdown=2, exc=e)
 
 
 @celery.task(bind=True)     
 def save_on_dbs(self, lessons):
+
+
+    """
+        Metodo para cuardar todas las lecciones y preguntas generadas en redis y postgres (neon)
+        
+        Retorna
+        ------
+        None (Solo guarda en cada base de datos.)
+
+    """
 
     redis = self.backend.client
 
@@ -151,16 +241,22 @@ def save_on_dbs(self, lessons):
         logger.error(e)
         raise e
 
+
+
 @celery.task
 def generate_lessons():
 
+    """
+        Metodo inicial de la generacion de lecciones.
 
+        Retorna
+        ------
+        None. (pues son los metodos dentro del proceso que las cean.)
 
-
-    dataset = load_from_disk(data_path)
+    """
    
 
-    sample_text = getDatasetText(dataset)
+    sample_text = getDatasetText()
 
 
     jobs = [generate_lesson.s(dict_text) for dict_text in sample_text]

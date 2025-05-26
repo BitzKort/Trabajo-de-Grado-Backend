@@ -1,7 +1,13 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional
-#schemas for responses models
+
+
+"""
+Modelos de pydantic para el uso tanto interno como externo de datos del usuario.
+"""
+
+
 
 class UserInfoResponse(BaseModel):
     id:str
@@ -17,7 +23,7 @@ class RegisterValidation(BaseModel):
     
     id:str
 
-#schemas for tables
+
 class User(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)

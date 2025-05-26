@@ -2,6 +2,12 @@
 from pydantic import BaseModel
 from datetime import datetime
 
+"""
+Modelos de pydantic para el uso tanto interno como externo de datos de las rachas.
+"""
+
+
+
 class Streak(BaseModel):
 
     id:str

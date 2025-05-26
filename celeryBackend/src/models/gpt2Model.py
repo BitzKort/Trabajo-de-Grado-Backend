@@ -8,6 +8,18 @@ from loguru import logger
 
 
 class Gpt2Model:
+
+    """
+        Clase para manejar las instancias creadas del modelo gpt2.
+        Utiliza el patrón singleton para el manejo de la memoria.
+
+        Retorna
+        -------
+        Una instancia del modelo gpt2.
+
+    """
+
+
     _instance = None
 
     def __new__(cls):
@@ -28,7 +40,6 @@ class Gpt2Model:
         dotenv.load_dotenv(dotenv_path="../.env.dev")
         self.gpt_path = os.getenv("GPT2_PATH")
 
-         # Verifica si la ruta existe
         if not os.path.exists(self.gpt_path):
             raise FileNotFoundError(f"Ruta del modelo gpt2 no encontrada: {self.gpt_path}")
 
@@ -38,7 +49,7 @@ class Gpt2Model:
 
         self.generator = pipeline( 'text-generation', model = self.model, tokenizer= self.tokenizer, device= 0 if torch.cuda.is_available() else -1)
 
-    def genetateText(self, base_text: str, max_length: int = 150) ->str:
+    def generateText(self, base_text: str, max_length: int = 150) ->str:
 
         if len(base_text) > 70:
             base_text = base_text[:55]

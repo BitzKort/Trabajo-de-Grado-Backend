@@ -6,8 +6,21 @@ from src.services.rankingServices import ranking
 
 rankingRouter = APIRouter()
 
-@rankingRouter.get("/ranking", response_model=List[RankingResponse])
+@rankingRouter.get("/ranking", response_model=List[RankingResponse])    
 async def get_ranking(ranking: List[RankingResponse] = Depends(ranking)) -> List[RankingResponse]:
+
+
+    """
+        Ruta para obtener el ranking de jugadores.
+
+        Retorna
+        -------
+        Lista de objetos tipo RankingResponse con la información de los jugadores dentro del ranking. 
+
+        Excepciones
+        -------
+        - Excepciones dentro de los metodos de servicio.
+    """
 
     try:
 

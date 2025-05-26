@@ -1,7 +1,9 @@
 from pydantic import BaseModel
 from typing import List
 
-
+"""
+    Modelos de pydantic para el manejo de datos de preguntas, lecciones y redis.
+"""
 
 class Question(BaseModel):
 

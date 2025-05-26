@@ -6,12 +6,24 @@ from loguru import logger
 
 class StsbModel():
 
+    
+    """
+        Clase para manejar las instancias creadas del modelo cross-encoder/stsb-roberta-base.
+        Utiliza el patrón singleton para el manejo de la memoria.
+
+        Retorna
+        -------
+        Una instancia del modelo cross-encoder/stsb-roberta-base.
+
+    """
+
     _instance = None
 
     def __new__(cls):
         
         if cls._instance is None:
             cls._instance = super().__new__(cls)
+            logger.warning("Se crea una nueva instancia de StsbModel")
             
             try:
                 cls._instance._loadModel()
@@ -31,7 +43,6 @@ class StsbModel():
     def generatePredict(self, sentence1: str, sentence2: str):
 
         prediction = str(self.generator.predict(sentence1, sentence2))
-        logger.success("Predicción generada")
 
         return prediction 
 

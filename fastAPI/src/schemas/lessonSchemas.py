@@ -1,17 +1,21 @@
 from pydantic import BaseModel
 from typing import List
 
+
+"""
+Modelos de pydantic para el uso tanto interno como externo de datos de lecciones.
+"""
+
+
+
 class LessonIdentry(BaseModel):
     lessonId:str
-
 
 class SaveLessonEnrtry(BaseModel):
 
     newExp:int
     lessonId:str
     score:float
-
-#for lesson id router
 
 class LessonWithQuestions(BaseModel):
     lesson_id:str
@@ -25,8 +29,6 @@ class LessonWithQuestions(BaseModel):
 class ListLessonWQ(BaseModel):
 
     questions: List[LessonWithQuestions]
-
-#for failed questions router
 
 class IncorrectQuestionResponse(BaseModel):
     lesson_id: str
@@ -55,7 +57,6 @@ class RedisLesson(BaseModel):
     id:str
     title:str
     question_count:int
-
 
 class AVLResponse(BaseModel):
 

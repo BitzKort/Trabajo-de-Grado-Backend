@@ -1,14 +1,26 @@
 import os
-from fastapi import Depends, HTTPException, status
+from fastapi import HTTPException, status
 from src.schemas.nplSchemas import SentencesCompareEnrty, SentenceCompareResponse
 from sentence_transformers import CrossEncoder
-from src.services.authServices import get_current_user
 from loguru import logger
 
 stsb_path = os.getenv("STSB_MODEL_PATH")
 
 
 async def compareAnswer(userCompareData:SentencesCompareEnrty, userId: str ) -> SentenceCompareResponse:
+
+
+    """
+        Método para comparar la respuesta del usuario con la del modelo.
+    
+        Retorna
+        -------
+        Objeto SentenceCompareResponse informacion general de la prediccion.
+
+        Excepciones
+        -------
+        - Excepciones del modelo.
+    """
 
     try:
 

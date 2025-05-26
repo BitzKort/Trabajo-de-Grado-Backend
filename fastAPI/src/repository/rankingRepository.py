@@ -7,6 +7,19 @@ from src.schemas.rankingSchemas import RankingResponse
 
 async def getRanking(dbConnect: asyncpg.pool) -> List[RankingResponse]:
 
+    """
+        Método para retornar el ranking de jugadores dentro del prototipo.
+
+        Retorna
+        -------
+        Una lista de objetos RankingResponse 
+
+        Excepciones
+        -------
+        - Excepciones de conexión a la bd.
+
+    """
+
     query =" SELECT u.username, r.exp, r.days FROM streaks r INNER JOIN users u ON r.id = u.id WHERE r.exp > 0 ORDER BY r.exp DESC LIMIT 10;"
 
     try:

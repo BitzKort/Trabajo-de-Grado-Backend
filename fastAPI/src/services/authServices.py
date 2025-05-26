@@ -1,17 +1,16 @@
 import bcrypt
 import os
 import asyncpg
-import redis.asyncio as asyncredis
-from fastapi import HTTPException, Depends, status, Body
+from fastapi import HTTPException, Depends, status
 from loguru import logger
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt, ExpiredSignatureError
 from fastapi_mail import FastMail, MessageSchema
 from tsidpy import TSID
-from src.repository.authRepository import emailCheckerRepository, get_userid_by_email, set_password_recovery, verify_token_recovery, delete_token_recovery 
-from src.repository.userRepository import createUserRepository, update_user_password, createUserStreak
-from src.repository.db import get_postgres, get_redis
+from src.repository.authRepository import emailCheckerRepository, get_userid_by_email, set_password_recovery, verify_token_recovery, delete_token_recovery
+from src.repository.userRepository import createUserRepository, update_user_password, createUserStreak, verify_user
+from src.repository.db import get_postgres
 from src.schemas.authSchemas import Register, EmailCheckerResponse, UseridEmailResponse, ForgotPasswordRequest, resetPasswordResponse
 from src.conf.emailConf import conf
 
@@ -20,6 +19,15 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 async def crypt(password: str) -> str:
 
+    """
+        Método para  encriptar la contraseña del usuario.
+    
+        Retorna
+        -------
+        La contraseña del usuario encriptada
+    """
+
+
     salt = bcrypt.gensalt()  
     hashed_password = bcrypt.hashpw(password.encode(), salt)  
     return hashed_password.decode()
@@ -27,12 +35,30 @@ async def crypt(password: str) -> str:
 
 async def verify_password(password, password_hashed):
 
+    
+    """
+        Método para verificar la contraseña que ingresa el usuario con la encriptada en la
+        base de datos.
+    
+        Retorna
+        -------
+        boolean: True si son iguales, False si no son iguales.
+    """
+
     response = bcrypt.checkpw(password, password_hashed)
 
     return response
 
 
 async def create_token(user_data: str, type:str) -> str:
+
+    """
+        Método para crear el tooken de acceso.
+    
+        Retorna
+        -------
+        Token de acceso string.
+    """
 
     ACCESS_TIME = int(os.getenv("ACCESS_TOKEN_TIME_MINUTES"))
     SECRET_KEY = os.getenv("SECRET_KEY")
@@ -53,6 +79,21 @@ async def create_token(user_data: str, type:str) -> str:
 
 
 async def create_password_token(userId: str, dbConnect) -> str:
+
+    """
+        Método para crear el token de recuperación de la contraseña.
+        Se crea un uuid que es el token que se guarda en la base de datos,
+        por último se crea un token JWT.
+    
+        Retorna
+        -------
+        Token JWT string.
+
+        Excepciones
+        -------
+        - Excepciones dentro de los metodos del repositorio.
+    """
+
 
     try:
         SECRET_KEY = os.getenv("SECRET_KEY")
@@ -82,7 +123,24 @@ async def create_password_token(userId: str, dbConnect) -> str:
         raise e
 
 
-async def get_current_user(redisConnect: asyncredis.Redis = Depends(get_redis), token: str = Depends(oauth2_scheme)):
+async def get_current_user(token: str = Depends(oauth2_scheme), dbConnect: asyncpg.Pool = Depends(get_postgres)):
+
+    """
+        Método para verificar el token de acceso que da el usuario en cada petición.
+        Este método verifica que tenga el formato válido (si es un jwt, si es de un usuario existente y si no ha caducado).
+    
+        Retorna
+        -------
+        El id del usuario: string
+
+        Excepciones
+        -------
+        - JWTError: Si hay algun error con el formato del token.
+        - ExpiredSignatureError: Si el token ha caducado.
+        - invalid_user: Si el id que se encuentra en el JWT no pertenece a ningún usuario.
+        - Excepciones dentro de los métodos del repositorio.
+    """
+
 
     SECRET_KEY = os.getenv("SECRET_KEY")
     ALGORITHM = os.getenv("ALGORITHM")
@@ -99,9 +157,9 @@ async def get_current_user(redisConnect: asyncredis.Redis = Depends(get_redis), 
         headers={"WWW-Authenticate": "Bearer"}
     )
 
-    deleted_user = HTTPException(
+    invalid_user = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Cuenta borrada.",
+        detail="Usuario no valido",
         headers={"WWW-Authenticate": "Bearer"}
     )
     
@@ -111,9 +169,9 @@ async def get_current_user(redisConnect: asyncredis.Redis = Depends(get_redis), 
         if userId is None:
             raise credentials_exception
         
-        if not await verify_deleted_user(userId, redisConnect):
+        if not await verify_user(userId, dbConnect):
 
-            raise deleted_user
+            raise invalid_user
 
     except ExpiredSignatureError:
         raise expired_exception
@@ -130,6 +188,23 @@ async def get_current_user(redisConnect: asyncredis.Redis = Depends(get_redis), 
 
 
 async def resetPassword(token:str, newPassword:str, dbConnect:asyncpg.Pool ) ->resetPasswordResponse:
+
+
+    """
+        Método para verificar el token JWT de cambio de contraseña enviado por correo electrónico al usuario.
+    
+        Retorna
+        -------
+        boolean: True: si el token es valido, false si no es valido.
+
+        Excepciones
+        -------
+        
+        - JWTError: Si hay algun error con el formato del token.
+        - ExpiredSignatureError: Si el token ha caducado.
+        - Excepciones dentro de los métodos del repositorio.
+    """
+
 
     SECRET_KEY = os.getenv("SECRET_KEY")
     ALGORITHM = os.getenv("ALGORITHM")
@@ -164,7 +239,6 @@ async def resetPassword(token:str, newPassword:str, dbConnect:asyncpg.Pool ) ->r
 
     except ExpiredSignatureError:
         raise expired_exception
-    
 
     except Exception as e:
 
@@ -178,7 +252,20 @@ async def resetPassword(token:str, newPassword:str, dbConnect:asyncpg.Pool ) ->r
 
 async def authLogin(userData: OAuth2PasswordRequestForm = Depends(), dbConnect = Depends(get_postgres)) -> EmailCheckerResponse:
 
-    #check if the email exist in order to get the password
+
+    """
+        Método para la logica del login.
+    
+        Retorna
+        -------
+        el Id del usuario.
+
+        Excepciones
+        -------
+        
+        - 404 Not Found: Usuario o contraseña incorrectos.
+        - Excepciones dentro de los métodos del repositorio.
+    """
 
     try: 
         userInfo = await emailCheckerRepository(userData.username, dbConnect)
@@ -189,7 +276,7 @@ async def authLogin(userData: OAuth2PasswordRequestForm = Depends(), dbConnect =
 
         if not checker:
 
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario o contraseña incorrectos.", headers={"WWW-Authenticate": "Bearer"})
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario o contraseña incorrectos.", headers={"WWW-Authenticate": "Bearer"})
 
         else:
 
@@ -202,6 +289,19 @@ async def authLogin(userData: OAuth2PasswordRequestForm = Depends(), dbConnect =
             
 
 async def createUserService(userData: Register, dbConnect ) -> str:
+
+
+    """
+        Método para la logica del registro de usuario.
+    
+        Retorna
+        -------
+        el Id del nuevo usuario registrado.
+
+        Excepciones
+        -------
+        - Excepciones dentro de los métodos del repositorio.
+    """
 
     try:
         hashedPassword = await crypt(userData.password)
@@ -222,9 +322,21 @@ async def createUserService(userData: Register, dbConnect ) -> str:
 
 async def forgotPassword( emailData:ForgotPasswordRequest= Depends(), dbConect = Depends(get_postgres)):
 
+
+    """
+        Método para verifica que si exista un usuario con ese email.
+    
+        Retorna
+        -------
+        Objeto UseridEmailResponse y conexion a la base de datos.
+
+        Excepciones
+        -------
+        - Excepciones dentro de los métodos del repositorio.
+    """
+
     try:
 
-        logger.warning(emailData)
         userData = await get_userid_by_email(emailData.email,dbConect)
 
         return UseridEmailResponse(id=userData.id, email=emailData.email), dbConect
@@ -234,6 +346,17 @@ async def forgotPassword( emailData:ForgotPasswordRequest= Depends(), dbConect =
         raise e
 
 async def send_password_email(email: str, token: str):
+
+
+    """
+       Método para el envío del correo electrónico de recuperar contraseña.
+    
+        Retorna
+        -------
+        None
+    """
+
+
     reset_link = f"http://localhost:5173/changePassword?token={token}"
     msg = MessageSchema(
         subject="Restablece tu contraseña",
@@ -250,24 +373,3 @@ async def send_password_email(email: str, token: str):
     await fm.send_message(msg) 
 
 
-async def verify_deleted_user(userId: str, redisConnect) -> bool:
-    """
-    - Usa el key "deleted:users" como un SET de IDs.
-    - Si el key no existe, retorna True indicando de que la cuenta sigue activa.
-    - Si el key existe:
-        • Si el userId ya está en el set, retorna False indicando que la cuenta esta eliminada.
-        • Si no está, lo añade y retorna True indicando que la cuenta esta activa.
-    """
-    key = "deleted:users"
-
-    exists = await redisConnect.exists(key)
-    
-    if not exists:
-        return True
-
-    is_deleted = await redisConnect.sismember(key, userId)
-
-    if is_deleted:
-        return False
-
-    return True

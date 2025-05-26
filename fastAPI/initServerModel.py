@@ -1,15 +1,23 @@
-
-from loguru import logger
-import os
-from sentence_transformers import CrossEncoder
 import dotenv
+import os
+from loguru import logger
+from sentence_transformers import CrossEncoder
 from pathlib import Path
 
 
-
-#Run this script only before create the docker images
-
 def checkout():
+
+    """
+        Método general para la descarga de los modelos de pln.
+    
+        Retorna
+        -------
+        boolean: True si ya paso mas de un dia, False si no.
+
+        Excepciones
+        -------
+        - Excepciones dentro de los metodos del repositorio.
+    """
 
     dotenv.load_dotenv(dotenv_path="../.env.dev")
     
@@ -19,20 +27,26 @@ def checkout():
     stsb_path = os.getenv("STSB_PATH")
      
 
-    logger.warning("scanning necessary files")
-
     if not (Path(stsb_path).is_dir()):
          
-        logger.warning("some folders were not found")
+        logger.warning("Algunas carpetas no fueron encontradas")
         init_Folders()
     
     else:
-         logger.success("ready to start the server")
+         logger.success("Listo para iniciar el servidor.")
 
 
 def init_Folders():
 
-    logger.warning("creating the folder for the stsb model")
+    """
+        Método para crear las carpetas de los modelos
+    
+        Retorna
+        -------
+        None
+    """
+
+    logger.warning("Creando carpetas para el modelo")
 
     dotenv.load_dotenv(dotenv_path=".env")
 
@@ -40,19 +54,26 @@ def init_Folders():
     os.makedirs(modules_path, exist_ok=True)
     os.makedirs(stsb_path, exist_ok=True)
 
-    logger.success("folders created")
+    logger.success("Carpetas creadas")
 
     init_models()
 
 
 def init_models():
 
-    logger.warning("Download the models")
+    """
+        Método para descargar y guarder el modelo de comparación de frases.
+    
+        Retorna
+        -------
+        None
+    """
 
-    #Special saving for stsb model
+    logger.warning("Descargando los modelos")
+
     crossEncoderName = "cross-encoder/stsb-roberta-base"
     model1 = CrossEncoder(crossEncoderName, cache_dir = './nplModules/Stsb')
 
-    logger.warning("model stsb was saved succesfully")
+    logger.warning("modelo stsb guardado con éxito.")
 
 checkout()

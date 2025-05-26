@@ -1,7 +1,13 @@
 from pydantic import BaseModel
 from typing import List
 from datetime import datetime
-#schemas for router responses
+
+
+
+"""
+Modelos de pydantic para el uso tanto interno como externo de datos de preguntas de lecciones y respuestas del modelo de npl
+"""
+
 
 class Question(BaseModel):
 

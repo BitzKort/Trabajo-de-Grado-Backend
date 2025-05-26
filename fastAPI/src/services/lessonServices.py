@@ -2,7 +2,6 @@ import redis.asyncio as asyncredis
 from fastapi import Depends, HTTPException, status
 from typing import List
 from loguru import logger
-from pydantic import ValidationError
 from src.services.userServices import get_current_user
 from src.repository.db import get_redis
 from src.schemas.lessonSchemas import VerifyAVLResponse, VerifyVLResponse, LessonIdentry, RedisLesson
@@ -10,6 +9,18 @@ from src.schemas.lessonSchemas import VerifyAVLResponse, VerifyVLResponse, Lesso
 
 async def verify_all_valid_lessons(redisConnect: asyncredis.Redis = Depends(get_redis), userId: str = Depends(get_current_user)) -> VerifyAVLResponse:
    
+    """
+        Método para verificar las lecciones por completar del usuario.
+    
+        Retorna
+        -------
+        Objeto VerifyAVLResponse que contiene la informacion general de las lecciones pendientes.
+
+        Excepciones
+        -------
+        - Excepciones dentro de redis.
+    """
+
     try:
         
         lessons_key ="all_lessons"
@@ -39,6 +50,18 @@ async def verify_all_valid_lessons(redisConnect: asyncredis.Redis = Depends(get_
 
 async def verify_valid_lesson(redisConnect: asyncredis.Redis= Depends(get_redis), userData: LessonIdentry = Depends(), userId: str = Depends(get_current_user)) -> VerifyVLResponse:
 
+    """
+        Método para verificar si la leccion es valida para el usuario.
+    
+        Retorna
+        -------
+        Objeto VerifyVLResponse que contiene un status y un mensaje si la leccion esta disponible o no.
+
+        Excepciones
+        -------
+        - Excepciones dentro de redis.
+    """
+
     try:
 
         if not await redisConnect.exists("all_lessons"):
@@ -66,25 +89,23 @@ async def verify_valid_lesson(redisConnect: asyncredis.Redis= Depends(get_redis)
 async def get_redis_data(redis_client: asyncredis.Redis, lesson_ids: List[str]) -> List[RedisLesson]:
 
     """
-    Obtiene múltiples entradas de Redis de forma optimizada usando pipeline
-    y devuelve los objetos validados
+    Método para obtener las lecciones válidas para el usuario.
+
+    Retorna
+    -------
+    Retorna lista con objetos RedisLesson las lecciones válidas para el usuario
+
     """
     if not lesson_ids:
         return []
 
-    # Crear pipeline
     pipeline = await redis_client.pipeline()
     
-    # Agregar todos los comandos al pipeline
     for key in lesson_ids:
         await pipeline.hgetall(key)
     
-    # Ejecutar todos los comandos en una sola operación
     results = await pipeline.execute()
 
-    logger.info(results)
-
-    # Procesar resultados
     items = []
     for key, result in zip(lesson_ids, results):
 

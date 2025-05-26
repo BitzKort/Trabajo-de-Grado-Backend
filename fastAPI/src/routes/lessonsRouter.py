@@ -1,21 +1,33 @@
 
 import asyncpg
 import redis.asyncio as asyncredis
-from fastapi import Depends, HTTPException, APIRouter, Query, status
+from fastapi import Depends, HTTPException, APIRouter, status
 from loguru import logger
 from src.repository.db import get_postgres, get_redis
 from src.services.authServices import get_current_user
 from src.services.lessonServices import verify_all_valid_lessons, verify_valid_lesson, get_redis_data
 from src.schemas.lessonSchemas import VerifyAVLResponse, VerifyVLResponse, LessonWithQuestions, IncorrectQuestionResponse, AVLResponse, ListLessonWQ
 
-from typing import Annotated
 
 
 lessonsRouter = APIRouter()
 
-#Router para traer la leccion con preguntas
 @lessonsRouter.get("/lessons")
 async def lessonId( lessonData: VerifyVLResponse = Depends(verify_valid_lesson), db: asyncpg = Depends(get_postgres)) -> ListLessonWQ:
+    
+
+    """
+        Ruta para obtener una leccion
+
+        Retorna
+        -------
+        Objeto ListLessonWQ que contiene toda la informacion de la leccion (ids, preguntas y respuestas)
+
+        Excepciones
+        -------
+        - Excepciones de conexión a la base de datos.
+    """
+
 
     try:
         if not lessonData.status =="success":
@@ -35,7 +47,6 @@ async def lessonId( lessonData: VerifyVLResponse = Depends(verify_valid_lesson),
             questionsData = await conn.fetch(query, lessonPostgresId)
 
             for question in questionsData:
-                logger.info(question)
                 formatedQuestion = LessonWithQuestions(**dict(question))
                 questionList.append(formatedQuestion)
             
@@ -46,10 +57,23 @@ async def lessonId( lessonData: VerifyVLResponse = Depends(verify_valid_lesson),
         raise e
 
 
-
-#cambiar y hacer verificacion con neon de si un usuario es apto o no
 @lessonsRouter.get("/AllLessons")
 async def get_lesson_keys(lessonData: VerifyAVLResponse = Depends(verify_all_valid_lessons), redisConnect: asyncredis.Redis = Depends(get_redis)) -> AVLResponse:
+
+
+
+    """
+        Ruta para obtener la información general de todas las lecciones pendientes por realizar.
+        Esta ruta se conecta a la base de datos de redis.
+        
+        Retorna
+        -------
+        Objeto AVLResponse que contiene la informacion general de las lecciones pendientes 
+
+        Excepciones
+        -------
+        - Excepciones dentro de los metodos de servicio.
+    """
 
     try:
 
@@ -69,7 +93,24 @@ async def get_lesson_keys(lessonData: VerifyAVLResponse = Depends(verify_all_val
 @lessonsRouter.get("/failedQuestions")
 async def get_failed_questions(dbConnect: asyncpg.pool = Depends(get_postgres), userId: str = Depends(get_current_user)) -> IncorrectQuestionResponse:
 
-    
+    """
+        Ruta para obtener las preguntas incorrectas por el usuario.
+        
+        NOTA
+        -------
+        Esta ruta retorna una pregunta incorrecta de forma aleatoria de la tabla.
+
+        Retorna
+        -------
+        Objeto IncorrectQuestionResponse que la información de la pregunta incorrecta.
+
+        Excepciones
+        -------
+        - 200 ok: No tienes preguntas incorrectas.
+        - Excepciones dentro de los metodos de servicio.
+    """
+
+
     query = """SELECT l.id AS lesson_id, q.id AS question_id, l.title, l.text, q.question_text, q.answer, q.distractor FROM incorrect_questions iq
                 JOIN questions q ON iq.question_id = q.id JOIN lessons l ON EXISTS ( SELECT 1 FROM 
                 jsonb_array_elements_text(l.questions_id) AS elem WHERE elem = q.id)
@@ -81,11 +122,7 @@ async def get_failed_questions(dbConnect: asyncpg.pool = Depends(get_postgres), 
 
             results = await conn.fetchrow(query, userId)
 
-            logger.warning(results)
-
             if not results:
-
-                logger.warning("No tienes preguntas incorrectas.")
 
                 raise HTTPException(status_code=status.HTTP_200_OK, detail="No tienes preguntas incorrectas.")
             

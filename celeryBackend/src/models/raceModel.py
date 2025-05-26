@@ -7,6 +7,16 @@ from loguru import logger
 
 class RaceModel:
 
+    """
+        Clase para manejar las instancias creadas del modelo t5-large-generation-race-QuestionAnswer.
+        Utiliza el patrón singleton para el manejo de la memoria.
+
+        Retorna
+        -------
+        Una instancia del modelo t5-large-generation-race-QuestionAnswer.
+
+    """
+
     _instance = None
 
     def __new__(cls):
@@ -39,7 +49,7 @@ class RaceModel:
 
         self.generator = pipeline("text2text-generation", model= self.model, tokenizer= self.tokenizer, device=0 if torch.cuda.is_available() else -1)
 
-    def genarteQA(self, text: str):
+    def generateQA(self, text: str):
 
         response = self.generator(text,max_length=100, truncation=True)[0]['generated_text']
         logger.success("race Q&A generado")

@@ -1,9 +1,11 @@
 
 from pydantic import BaseModel, EmailStr
-from typing import Optional
 
 
-#schemas for routers
+""" 
+Modelos de pydantic para el uso tanto interno como externo de datos en el proceso de autenticación.
+
+"""
 
 class Login(BaseModel):
 
@@ -17,14 +19,11 @@ class Register(BaseModel):
     email: EmailStr
     password: str
 
-
-#Schemas for client responses
 class AuthResponse(BaseModel):
 
     access_token: str
     token_type: str
 
-#Schemas for inner validations
 class EmailCheckerResponse(BaseModel):
 
     id:str

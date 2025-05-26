@@ -1,10 +1,8 @@
 
 import asyncpg
-import redis.asyncio as asyncredis
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from src.repository.db import get_postgres, get_redis
-from src.schemas.userSchema import User, UserInfoResponse, UserUpdateModel
-from typing import List, Annotated
+from fastapi import APIRouter, Depends, HTTPException, status
+from src.repository.db import get_postgres
+from src.schemas.userSchema import UserInfoResponse, UserUpdateModel
 from loguru import logger
 from src.services.authServices import get_current_user
 from src.services.userServices import userInfo, verify_streak, updateUser
@@ -17,6 +15,17 @@ userRouter = APIRouter()
 @userRouter.get("/userInfo", response_model=UserInfoResponse)
 async def getUserInfo(user_data: UserInfoResponse = Depends(userInfo))-> UserInfoResponse:
 
+    """
+        Ruta para obtener la información general del usuario.
+
+        Retorna
+        -------
+        Objeto UserInfoResponse con la información general del usuario.
+
+        Excepciones
+        -------
+        - Excepciones dentro de los metodos de servicio.
+    """
 
     try:
 
@@ -24,7 +33,6 @@ async def getUserInfo(user_data: UserInfoResponse = Depends(userInfo))-> UserInf
 
         streak_data_verified = await verify_streak(user_info, dbConnect)
 
-        logger.warning(streak_data_verified)
 
         return streak_data_verified
 
@@ -36,6 +44,19 @@ async def getUserInfo(user_data: UserInfoResponse = Depends(userInfo))-> UserInf
 
 @userRouter.put("/updateUser", status_code=status.HTTP_200_OK)
 async def update_user(userData: UserUpdateModel, userId = Depends(get_current_user), dbConnect:asyncpg.pool = Depends(get_postgres)):
+    
+    """
+        Ruta para actualizar el nombre o el username del usuario.
+
+        Retorna
+        -------
+        200 ok: mensaje si fue exitoso o no la actualizacion
+
+        Excepciones
+        -------
+        - Excepciones dentro de los metodos de servicio.
+    """
+
 
     try:
         userData = await updateUser(userData=userData, userId=userId, dbConnect=dbConnect)
@@ -45,40 +66,3 @@ async def update_user(userData: UserUpdateModel, userId = Depends(get_current_us
 
         logger.error(e)
         raise e
-    
-
-
-@userRouter.delete("/deleteLogicUser")
-async def test(dbConect: asyncpg.Pool = Depends(get_postgres), redisConnect: asyncredis.Redis = Depends(get_redis), userId:str = Depends(get_current_user)):
-
-
-    query ="UPDATE users SET deleted = $2 WHERE id = $1;"
-
-    try:
-
-        async with dbConect.acquire() as conn:
-
-            await conn.fetchrow(query, userId, True)        
-        
-        #guardado en redis para verificacion del token        
-        key = "deleted:users"
-
-        exists = await redisConnect.exists(key)
-        if not exists:
-            # crea el SET con el primer miembroe
-            await redisConnect.sadd(key, userId)
-
-        else:
-
-            await redisConnect.sadd(key, userId)
-
-
-        return {"msg": "Usuario eliminado logicamente"}
-
-
-
-    except Exception as e:
-
-        logger.error(e)
-
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)

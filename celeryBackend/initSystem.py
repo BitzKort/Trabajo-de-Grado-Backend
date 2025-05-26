@@ -5,13 +5,21 @@ from transformers import pipeline
 import dotenv
 from datasets import load_dataset
 from pathlib import Path
-from pprint import pprint
-
-
-
-#Run this script only before create the docker images
 
 def checkout():
+
+    """
+        Método general para la descarga de los modelos de pln.
+    
+        Retorna
+        -------
+        boolean: True si ya paso mas de un dia, False si no.
+
+        Excepciones
+        -------
+        - Excepciones dentro de los metodos del repositorio.
+    """
+
 
     dotenv.load_dotenv(dotenv_path="../.env.dev")
      
@@ -39,7 +47,15 @@ def checkout():
 
 def init_Folders():
 
-    logger.warning("creating the folder for the models")
+    """
+        Método para crear las carpetas de los modelos
+    
+        Retorna
+        -------
+        None
+    """
+
+    logger.warning("Creando las carpetas para los modelos.")
 
     dotenv.load_dotenv(dotenv_path=".env.dev")
 
@@ -55,45 +71,51 @@ def init_Folders():
     os.makedirs(datasetFolder, exist_ok=True)
     os.makedirs(datasetFilterFolder, exist_ok=True)
 
-    logger.success("folders created")
+    logger.success("Carpetas creadas.")
 
     init_models()
 
 
 def init_models():
 
-    logger.warning("Download the models")
-
-
-    #Model for text generation (experimental)
-    textGenerator = pipeline('text-generation', model='gpt2')
+    """
+        Método para descargar y guarder los modelos
     
-    #Model for question and answers in an abstractive form (potsawee/t5-large-generation-race-QuestionAnswer)
+        Retorna
+        -------
+        None
+    """
+
+    logger.warning("Descargando los modelos.")
+
+
+    
+    textGenerator = pipeline('text-generation', model='gpt2')
+   
 
     raceQAGenerator = pipeline("text2text-generation", model="potsawee/t5-large-generation-race-QuestionAnswer")
 
-    #Model for question and answers in an extractive form (potsawee/t5-large-generation-squad-QuestionAnswer)
+   
 
     squadQAGenerator = pipeline("text2text-generation", model = "potsawee/t5-large-generation-squad-QuestionAnswer")
 
-    #Model for distractor answers t5-large-generation-race-Distractor
-
+   
     DGenerator = pipeline("text2text-generation", model="potsawee/t5-large-generation-race-Distractor")
 
     
 
-    logger.warning("Saving models")
+    logger.warning("Guardando los modelos.")
     
     
-    #For gpt model
+    #gpt
     textGenerator.model.save_pretrained(gpt_path)
     textGenerator.tokenizer.save_pretrained(gpt_path)
 
-    #For race-t5 model (Abstractive)
+    #race-t5 model (Abstractive)
     raceQAGenerator.model.save_pretrained(race_path)
     raceQAGenerator.tokenizer.save_pretrained(race_path)
 
-    #For squad-t5 model (extractive)
+    #squad-t5 model (extractive)
     squadQAGenerator.model.save_pretrained(squad_path)
     squadQAGenerator.tokenizer.save_pretrained(squad_path)
 
@@ -101,7 +123,7 @@ def init_models():
     DGenerator.tokenizer.save_pretrained(distractor_path)
 
 
-    logger.success("All models saved in the server")
+    logger.success("Todos los modelos han sido guardados.")
 
 
 
@@ -110,7 +132,16 @@ def init_models():
 
 def init_dataset():
 
-    logger.warning("Downloading the dataset wikipedia.simple")
+
+    """
+        Método para descargar el dataset utilizado.
+    
+        Retorna
+        -------
+        None
+    """
+
+    logger.warning("Descargando el dataset wikipedia.simple")
 
     dataset = load_dataset("wikipedia", "20220301.simple", cache_dir=datasetFolder, trust_remote_code=True)
 
@@ -122,7 +153,5 @@ def init_dataset():
     newDataset = newDataset.add_column("text", allSplitedText)
 
     newDataset.save_to_disk(datasetFilterFolder)
-
-    
 
 checkout()

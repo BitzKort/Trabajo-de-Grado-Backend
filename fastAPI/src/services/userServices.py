@@ -1,18 +1,28 @@
-
-from loguru import logger
-from fastapi import HTTPException, status, Depends
-from datetime import timedelta, datetime, date
 import redis.asyncio as asyncredis
 import asyncpg
+from loguru import logger
+from fastapi import HTTPException, status, Depends
+from datetime import timedelta, datetime
 from src.schemas.userSchema import UserInfoResponse, UserUpdateModel
-from src.schemas.nplSchemas import CompareRouterResponse
 from src.repository.userRepository import getUserInfo, userUpdate
 from src.repository.streakRepository import update_strike, update_exp, get_last_activity_date, update_days
 from src.repository.db import get_postgres
 from src.services.authServices import get_current_user
-from src.schemas.lessonSchemas import SaveLessonEnrtry
+
 
 async def userInfo(userId :str = Depends(get_current_user), dbConnect = Depends(get_postgres)) -> UserInfoResponse:
+
+    """
+        Método de logica para obtener la información general del usuario.
+    
+        Retorna
+        -------
+        Objeto UserInfoResponse
+
+        Excepciones
+        -------
+        - Excepciones dentro de los metodos del repositorio.
+    """
 
 
     userInfoResult = await getUserInfo(userId, dbConnect)
@@ -26,24 +36,52 @@ async def userInfo(userId :str = Depends(get_current_user), dbConnect = Depends(
         return userInfoResult, dbConnect
     
 
-async def verify_streak(userInfo, dbConnect ):
+async def verify_streak(userInfo, dbConnect):
 
-    today = datetime.today()
-    if not userInfo.last_activity_date.date() == today.date():
-        #si no es hoy es pq falta por hacer al menos una leccion
 
-        # si no es hoy y no tiene tiempo de 1 dia, se reinicia
-        if userInfo.last_activity_date < today - timedelta(days=1):
-
-            userInfo.days = 0
-            userInfo.last_activity_date = today
-
-            userInfo = await update_strike(userInfo, dbConnect)
+    """
+        Método de logica para verificar la racha del usuario.
     
-    return userInfo
+        Retorna
+        -------
+        Objeto Streak
+
+        Excepciones
+        -------
+        - Excepciones dentro de los metodos del repositorio.
+    """
+
+    try:
+        today = datetime.today()
+        if not userInfo.last_activity_date.date() == today.date():
+
+            if userInfo.last_activity_date < today - timedelta(days=1):
+
+                userInfo.days = 0
+                userInfo.last_activity_date = today
+
+                userInfo = await update_strike(userInfo, dbConnect)
+        
+        return userInfo
+    
+    except Exception as e:
+
+        raise e
 
 async def updateUser(userData: UserUpdateModel, userId: str, dbConnect: asyncpg.pool):
-    logger.warning(userData)
+
+    """
+        Método de logica para actualizar el name o el username del usuario.
+    
+        Retorna
+        -------
+        Objeto json con msg: Usuario actualizado exitosamente.
+
+        Excepciones
+        -------
+        - Excepciones dentro de los metodos del repositorio.
+    """
+
     try:
         await userUpdate(userData, userId, dbConnect)
 
@@ -60,18 +98,44 @@ async def updateUser(userData: UserUpdateModel, userId: str, dbConnect: asyncpg.
     
 
 async def is_consecutive_day(last_activity: datetime) -> bool:
+
+
+    """
+        Método de logica para verificar si ya paso un dia desde la utima pregunta realizada por el usuario.
+    
+        Retorna
+        -------
+        Boolean: True si ya paso mas de un dia, False si no.
+
+        Excepciones
+        -------
+        - Excepciones dentro de los metodos del repositorio.
+    """
+    
+
     now = datetime.now()
     
-    # Verifica si ya pasaron más de 24 horas
     if now - last_activity > timedelta(hours=24):
         return False
 
-    # Verifica si los días son consecutivos (ayer y hoy)
     yesterday = (now.date() - timedelta(days=1))
     return last_activity.date() == yesterday
 
 
 async def updateExp(userId: str, newExp:str, newLastTime, dbConnect):
+
+    """
+        Método de logica para actualizar los puntos de experiencia del usuario.
+    
+        Retorna
+        -------
+        None
+
+        Excepciones
+        -------
+        - Excepciones dentro de los metodos del repositorio.
+    """
+
 
     try:
 
@@ -82,10 +146,7 @@ async def updateExp(userId: str, newExp:str, newLastTime, dbConnect):
 
             await update_days(userId, dbConnect)
 
-        await update_exp(userId, newExp, newLastTime, dbConnect)
-
-
-        
+        await update_exp(userId, newExp, newLastTime, dbConnect)  
     
     except HTTPException:
         raise
@@ -100,20 +161,22 @@ async def updateExp(userId: str, newExp:str, newLastTime, dbConnect):
 
 async def saveRedisLesson(user_id: str, lesson_id: str, redis:asyncredis.Redis) -> bool:
     """
-    Añade la leccion al set de lecciones/completados del usuario.
+    Método que añade la leccion al set de lecciones/completados del usuario.
     - Si la clave no existe, Redis la crea automáticamente al hacer SADD.
-    - Devuelve True si el item se añadió (no existía antes), False si ya estaba.
+
+    Retorna
+    -------
+    - None
+
+    Excepciones
+    -------
+    - Excepciones dentro de redis.
     """
 
     try: 
         user_key = f"user:{user_id}:completed"
 
-        # 2) Añadir al set (crea la clave si no existe)
         added = await redis.sadd(user_key, lesson_id)
-        # sadd devuelve 1 si el elemento NO estaba y se añade, 0 si ya existía
-        if not added:
-
-            logger.warning(f"{lesson_id} ya estaba en {user_key}; no hay duplicados.")
 
     except Exception as e:
 
