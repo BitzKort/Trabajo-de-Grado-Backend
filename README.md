@@ -1,4 +1,4 @@
-# Prototipo Web - Rama `fastapi-server`
+# Prototipo Web - Rama `fastapiServer`
 
 Esta rama contiene el servidor web construido con **FastAPI**.
 
