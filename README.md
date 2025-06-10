@@ -16,8 +16,7 @@ Antes de comenzar, asegúrate de tener instalados y configurados:
 1. Clona la rama `celery` de tu repositorio:
 
    ```bash
-   git checkout celery
-
+   git clone https://github.com/BitzKort/Trabajo-de-Grado-Backend.git
 
 2. Crea y activa un entorno virtual:
 
@@ -121,7 +120,8 @@ Before starting, ensure you have installed and configured:
 1. Clone the `celery` branch:
 
    ```bash
-   git checkout celery
+   git clone https://github.com/BitzKort/Trabajo-de-Grado-Backend.git
+
 
 
 2. Create and activate a virtual environment:
