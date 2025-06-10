@@ -11,10 +11,10 @@ Esta rama contiene el servidor web construido con **FastAPI**.
 
 ## Instalación del proyecto
 
-1. Cambia a la rama `fastapiServer`:
+1. Clona el repositorio:
 
    ```bash
-   git checkout fastapiServer
+   git clone https://github.com/BitzKort/Trabajo-de-Grado-Backend.git
 
 2. Crea y activa un entorno virtual:
 
@@ -92,11 +92,11 @@ This branch contains the web server built with **FastAPI**.
 
 ## Project Installation
 
-1. Switch to the `fastapiServer` branch:
+1. Clone the repository:
 
    ```bash
-   git checkout fastapiServer
-   
+   git clone https://github.com/BitzKort/Trabajo-de-Grado-Backend.git
+
 2. Create and activate a virtual environment:
 
    ```bash
