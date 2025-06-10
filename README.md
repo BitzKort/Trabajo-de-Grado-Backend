@@ -29,5 +29,5 @@ In this branch you will find:
 
 The deployable components are hosted in separate branches:
 
-- The FastAPI server is located in the [`fastapi-server`](https://github.com/BitzKort/Trabajo-de-Grado-Backend/tree/fastapi-server) branch.
+- The FastAPI server is located in the [`fastapi-server`](https://github.com/BitzKort/Trabajo-de-Grado-Backend/tree/fastapiServer) branch.
 - The Celery project is in the [`celery`](https://github.com/BitzKort/Trabajo-de-Grado-Backend/tree/celery) branch.
