@@ -24,7 +24,7 @@ async def getUserInfo(id, dbConect: asyncpg.Pool) -> UserInfoResponse:
 
     """
     
-    query = "SELECT id, name, username, exp, days, last_activity_date, CASE WHEN exp = 0 THEN 0 ELSE ranking END AS ranking FROM (SELECT u.id, u.name, u.username, s.exp, s.days, s.last_activity_date, DENSE_RANK() OVER (ORDER BY s.exp DESC) AS ranking FROM streaks s INNER JOIN users u  ON s.id = u.id WHERE u.deleted = FALSE) t WHERE id = $1;"
+    query = "SELECT id, name, username, exp, days, last_activity_date, CASE WHEN exp = 0 THEN 0 ELSE ranking END AS ranking FROM (SELECT u.id, u.name, u.username, s.exp, s.days, s.last_activity_date, DENSE_RANK() OVER (ORDER BY s.exp DESC) AS ranking FROM streaks s INNER JOIN users u  ON s.id = u.id) t WHERE id = $1;"
 
     try:
 
@@ -217,11 +217,13 @@ async def userUpdate(user_data: UserUpdateModel, userId: str, dbConnect: asyncpg
     
 
 
-async def deleteFromIncorrect(userId: str, question_id: str, dbConnect):
+
+async def save_solved_lessons(userId: str, lesson_id, dbConnect):
+
     
 
     """
-        Método para eliminar una pregunta del pool de preguntas incorrectas del usuario.
+        Método para ingresar el registro de que el usuario realizo una leccion.
 
         Retorna
         -------
@@ -232,31 +234,38 @@ async def deleteFromIncorrect(userId: str, question_id: str, dbConnect):
         - Excepciones de conexión a la bd.
 
     """
-
+    
+    new_lesson_id = lesson_id.split(":",1)[1]
+ 
+    id = str(TSID.create())
 
     query = """
-        DELETE FROM incorrect_questions
-        WHERE user_id = $1 AND question_id = $2;
+        INSERT INTO solved_lessons (id, lesson_id, user_id)
+        VALUES ($1, $2, $3);
     """
 
     try:
         async with dbConnect.acquire() as conn:
-            await conn.execute(query, userId, question_id)
+            await conn.execute(query, id, new_lesson_id, userId)
+
+    except UniqueViolationError as e:
+        logger.error(e)
+        return
 
     except Exception as e:
         logger.error(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error eliminando pregunta incorrecta."
+            detail="Error insertando pregunta incorrecta."
         )
 
 
 
-async def insertIntoIncorrect(userId: str, question_id: str, dbConnect):
+async def save_on_registration_questions(userId: str, question_id: str, is_correct, dbConnect):
 
 
     """
-        Método para ingresar una pregunta del pool de preguntas incorrectas del usuario.
+        Método para ingresar una pregunta del pool de preguntas contestadas del usuario.
 
         Retorna
         -------
@@ -272,13 +281,13 @@ async def insertIntoIncorrect(userId: str, question_id: str, dbConnect):
     id = str(TSID.create())
 
     query = """
-        INSERT INTO incorrect_questions (id, user_id, question_id)
-        VALUES ($1, $2, $3);
+        INSERT INTO registration_questions (id, question_id, user_id, is_correct)
+        VALUES ($1, $2, $3, $4);
     """
 
     try:
         async with dbConnect.acquire() as conn:
-            await conn.execute(query, id, userId, question_id)
+            await conn.execute(query, id, question_id, userId, is_correct)
 
     except Exception as e:
         logger.error(e)
@@ -286,6 +295,47 @@ async def insertIntoIncorrect(userId: str, question_id: str, dbConnect):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error insertando pregunta incorrecta."
         )
+    
+
+
+
+async def update_on_registration_questions(userId: str, question_id: str, is_correct, dbConnect):
+
+
+    """
+        Método para actualizar el etado de una pegunta que el usuario ya ha respondido.
+
+        Retorna
+        -------
+        None
+
+        Excepciones
+        -------
+        - Excepciones de conexión a la bd.
+
+    """
+
+ 
+    id = str(TSID.create())
+
+    query = """
+        UPDATE registration_questions
+        SET is_correct = $3
+        WHERE user_id    = $2
+        AND question_id = $1;
+    """
+
+    try:
+        async with dbConnect.acquire() as conn:
+            await conn.execute(query, question_id, userId, is_correct)
+
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error insertando pregunta incorrecta."
+        )
+
 
 async def verify_user(id:str, dbConnect: asyncpg.Pool) -> bool:
    

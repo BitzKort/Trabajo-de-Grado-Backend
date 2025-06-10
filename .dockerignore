@@ -6,11 +6,6 @@ env/
 .venv/
 celeryBackend/celery
 
-#Ignorar modelos y dataset (volumen aparte)
-celeryBackend/dataset
-celeryBackend/dataset*
-celeryBackend/nplModules
-
 # Ignorar archivos de git
 .git/
 .gitignore
@@ -20,6 +15,7 @@ celeryBackend/nplModules
 .idea/
 
 # Ignorar cache de Python
+__pycache__
 __pycache__/
 *.pyc
 *.pyo
@@ -37,3 +33,6 @@ __pycache__/
 docker-compose.override.yml
 docker-compose.yml
 Dockerfile.dev
+celery.Dockerfile
+Dockerfile
+docker-compose.yml

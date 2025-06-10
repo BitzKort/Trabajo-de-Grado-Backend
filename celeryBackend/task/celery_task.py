@@ -1,6 +1,7 @@
 import os
 import dotenv
 import random
+import re
 from task.celery_app import celery
 from loguru import logger
 from celery import chord
@@ -37,7 +38,7 @@ def getDatasetTextRetry() -> str:
     local_random = random.Random()
     local_random.seed(os.urandom(16)) 
     
-    random_ids = local_random.sample(range(1, 205328), 10)
+    random_ids = local_random.sample(range(1, 120703), 10)
     samples = [dataset[id] for id in random_ids]
     selected_text = local_random.choice(samples)
     
@@ -58,7 +59,7 @@ def getDatasetText() -> list:
 
     dataset = load_from_disk(data_path)
     
-    randomId = random.sample(range(1,205328),6)
+    randomId = random.sample(range(1,120703),6)
 
     sample_text = list(map(lambda x: dataset[x],randomId))
 
@@ -96,7 +97,7 @@ def split_qa(text: str) -> tuple[str, str]:
     return text.strip(), ''
 
 
-@celery.task(bind=True, max_retries=5)
+@celery.task(bind=True, max_retries=6)
 def generate_lesson(self, dict_text) -> LessonData:
 
     """
@@ -120,21 +121,29 @@ def generate_lesson(self, dict_text) -> LessonData:
     try:
         sample_text = dict_text["text"]
         final_text = gpt2.generateText(sample_text)
+
+        if len(final_text) < 150:
+            logger.warning("Texto generado tiene menos de 150 caracteres. Reintentando...")
+            raise ValueError("Texto generado demasiado corto")
+
  
         # Generar QA para Race
         qa_race = raceQA.generateQA(final_text)
         question_race, answer_race = split_qa(qa_race)
+
+        
         
         # Validar Race
         if not question_race.strip() or not answer_race.strip():
             logger.warning("QA Race vacío. Reintentando...")
             raise ValueError("Race QA vacío")
-            
+        
         distractor_race = distractor.generate_distractors(question_race, final_text, answer_race)
         if distractor_race.lower() == answer_race.lower():
             logger.warning("Distractor Race igual a respuesta. Reintentando...")
             raise ValueError("Distractor Race inválido")
  
+
         # Generar QA para Squad
         qa_squad = squadQA.generateQA(final_text)
         question_squad, answer_squad = split_qa(qa_squad)
@@ -143,11 +152,14 @@ def generate_lesson(self, dict_text) -> LessonData:
         if not question_squad.strip() or not answer_squad.strip():
             logger.warning("QA Squad vacío. Reintentando...")
             raise ValueError("Squad QA vacío")
-            
+        
+
         distractor_squad = distractor.generate_distractors(question_squad, final_text, answer_squad)
         if distractor_squad.lower() == answer_squad.lower():
             logger.warning("Distractor Squad igual a respuesta. Reintentando...")
             raise ValueError("Distractor Squad inválido")
+        
+
 
         # Crear lección si pasa todas las validaciones
         lessons_generated = LessonData(
@@ -207,12 +219,9 @@ def save_on_dbs(self, lessons):
             lesson = LessonData(**lesson)
 
     
-            
-            questions_id = insert_questions(lesson.Questions)
+            lesson_id = insert_lesson(lesson)
 
-            lesson_id = insert_lesson(lesson, questions_id)
-
-
+            insert_questions(lesson.Questions, lesson_id)
 
             
             #para redis

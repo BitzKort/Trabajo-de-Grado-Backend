@@ -34,6 +34,7 @@ class SentencesCompareEnrty(BaseModel):
     
     lesson_id:str
     question_id:str
+    question_number:int
     newExp:int
     sentenceNlp: str
     sentenceUser:str

@@ -1,6 +1,7 @@
 import dotenv
 import os
 import torch
+import re
 from transformers import pipeline, AutoModelForSeq2SeqLM, AutoTokenizer
 from loguru import logger
 
@@ -47,12 +48,27 @@ class RaceModel:
         self.model = AutoModelForSeq2SeqLM.from_pretrained(self.race_path)
         self.tokenizer = AutoTokenizer.from_pretrained(self.race_path)
 
-        self.generator = pipeline("text2text-generation", model= self.model, tokenizer= self.tokenizer, device=0 if torch.cuda.is_available() else -1)
-
+        self.generator = pipeline(
+                    "text2text-generation",
+                    model=self.model,
+                    tokenizer=self.tokenizer,
+                    device=0 if torch.cuda.is_available() else -1,
+                    max_length=80,
+                    num_beams=5,
+                    no_repeat_ngram_size=2,
+                    do_sample=True,
+                    temperature=0.7,
+                    top_k=50
+                )
     def generateQA(self, text: str):
 
-        response = self.generator(text,max_length=100, truncation=True)[0]['generated_text']
-        logger.success("race Q&A generado")
+        response = self.generator(text,max_length=80, truncation=True)[0]['generated_text']
 
-        return response
+        clean_response = re.sub(
+            r'[^a-zA-Z0-9áéíóúüñÁÉÍÓÚÜÑ¿¡\s\.,;:!?()\-—"\'-]', 
+            '', response).strip()
+
+        logger.success("race Q&A generado y sanitizado")
+
+        return clean_response
         

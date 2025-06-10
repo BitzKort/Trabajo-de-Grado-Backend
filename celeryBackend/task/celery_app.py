@@ -3,7 +3,7 @@ import dotenv
 import random
 import time
 from celery import Celery
-from celery.signals import worker_process_init, worker_ready
+from celery.signals import worker_process_init
 from celery.schedules import crontab
 
 
@@ -37,7 +37,7 @@ celery = Celery(
 celery.conf.beat_schedule = {
     "generate-lessons-15-min": {
         "task": "task.celery_task.generate_lessons",
-        "schedule": 900
+        "schedule": crontab(minute='*/30')
         }
 }
 
@@ -48,9 +48,9 @@ celery.conf.beat_schedule = {
     Configuracion del worker
 """
 celery.conf.update(
-    worker_concurrency=3,
-    worker_prefetch_multiplier=4,
-    broker_pool_limit=12,
+    worker_concurrency=2,
+    worker_prefetch_multiplier=1,
+    broker_pool_limit=10,
 )
 
 
@@ -64,5 +64,3 @@ def init_pools(**kwargs):
     """
 
     random.seed(os.getpid() + int(time.time()))
-
-

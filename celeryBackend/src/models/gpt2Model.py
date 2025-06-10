@@ -2,6 +2,7 @@
 import dotenv
 import os
 import torch
+import re
 from transformers import pipeline, set_seed, AutoModelForCausalLM, AutoTokenizer
 from loguru import logger
 
@@ -18,7 +19,6 @@ class Gpt2Model:
         Una instancia del modelo gpt2.
 
     """
-
 
     _instance = None
 
@@ -47,13 +47,22 @@ class Gpt2Model:
         self.tokenizer = AutoTokenizer.from_pretrained(self.gpt_path)
 
 
-        self.generator = pipeline( 'text-generation', model = self.model, tokenizer= self.tokenizer, device= 0 if torch.cuda.is_available() else -1)
-
+        self.generator = pipeline(
+                    'text-generation',
+                    model=self.model,
+                    tokenizer=self.tokenizer,
+                    device=0 if torch.cuda.is_available() else -1,
+                    framework="pt",
+                    num_beams= 5,
+                    temperature= 0.9,
+                    top_k= 45,
+                    no_repeat_ngram_size= 3
+                )
     def generateText(self, base_text: str, max_length: int = 150) ->str:
 
         if len(base_text) > 70:
-            base_text = base_text[:55]
-            logger.warning("Texto base truncado a 55 caracteres")
+            base_text = base_text[:70]
+            logger.warning("Texto base truncado a 70 caracteres")
 
         set_seed(40)
         generated_text = self.generator(base_text, max_length =max_length, 
@@ -73,9 +82,20 @@ class Gpt2Model:
         )
         
         if last_valid_end != -1:
-            return generated_text[:last_valid_end+1]
-        
-        # Si no encuentra, devolver hasta el último espacio en blanco
-        last_space = generated_text.rfind(" ", 0, len(generated_text)-1)
+            processed_text = generated_text[:last_valid_end+1]
+        else:
+            last_space = generated_text.rfind(" ", 0, len(generated_text)-1)
+            processed_text = generated_text[:last_space+1] if last_space != -1 else generated_text
 
-        return generated_text[:last_space+1] if last_space != -1 else generated_text
+        # 2. Sanitización de caracteres
+        clean_text = re.sub(
+            r'[^a-zA-Z0-9áéíóúüñÁÉÍÓÚÜÑ¿¡\s\.,;:!?()\-—"\'–]', 
+            '', 
+            processed_text
+        ).strip()
+
+        # 3. Eliminar espacios múltiples
+        final_text = re.sub(r'\s+', ' ', clean_text)
+
+        logger.success("Texto generado y sanitizado")
+        return final_text

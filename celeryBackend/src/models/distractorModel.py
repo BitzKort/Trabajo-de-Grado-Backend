@@ -1,5 +1,7 @@
 import dotenv
 import os
+import re
+import difflib
 from loguru import logger
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
@@ -37,38 +39,52 @@ class DistractorModel:
         self.tokenizer = AutoTokenizer.from_pretrained(self.distractor_path)
 
     def generate_distractors(self, question: str, context: str, answer: str):
+        logger.info(f"answer: {answer}")
         input_text = " ".join([question, self.tokenizer.sep_token, answer, self.tokenizer.sep_token, context])
         inputs = self.tokenizer(input_text, return_tensors="pt")
         outputs = self.model.generate(
             **inputs,
-            max_new_tokens=128,
-            num_beams=5,  
-            no_repeat_ngram_size=2,  
-            do_sample=True,  
-            temperature=0.9,  
+            max_new_tokens=20,
+            num_beams=5,
+            no_repeat_ngram_size=2,
+            do_sample=True,
+            temperature=0.9,
             top_k=50
         )
         
         distractors = self.tokenizer.decode(outputs[0], skip_special_tokens=False)
         distractors = distractors.replace(self.tokenizer.pad_token, "").replace(self.tokenizer.eos_token, "")
-        distractors = [y.strip() for y in distractors.split(self.tokenizer.sep_token) if y.strip()]
         
-       
+        # Limpieza con regex
+        clean_pattern = r'[^a-zA-Z0-9áéíóúüñÁÉÍÓÚÜÑ¿¡\s\.,;:!?()\-—"\'–]'
+        distractors = [
+            re.sub(clean_pattern, '', d.strip()) 
+            for d in distractors.split(self.tokenizer.sep_token) 
+            if d.strip()
+        ]
+        
         valid_distractors = []
         seen = set()
         for distractor in distractors:
-            
-            lower_dist = distractor.lower()
-            lower_ans = answer.lower()
-            if (lower_dist not in seen and 
-                lower_dist != lower_ans and 
-                not any(word in lower_ans for word in lower_dist.split()) and
-                len(distractor) > 2):
+            logger.warning(distractor)
+            clean_d = re.sub(clean_pattern, '', distractor).strip()
+            if not clean_d:
+                continue
                 
-                valid_distractors.append(distractor)
+            lower_dist = clean_d.lower()
+            lower_ans = answer.lower()
+            
+            if (lower_dist not in seen and 
+                            lower_dist != lower_ans and
+                        len(clean_d) > 2):
+                
+                valid_distractors.append(clean_d)
                 seen.add(lower_dist)
         
-        logger.info(f"Distractores generados: {valid_distractors}")
-
-        return valid_distractors[0]
+            if valid_distractors:
+                most_diff = min(
+                    valid_distractors,
+                    key=lambda d: difflib.SequenceMatcher(None, d.lower(), answer.lower().strip()).ratio()
+                )
+                return most_diff
     

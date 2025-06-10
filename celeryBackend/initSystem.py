@@ -1,10 +1,10 @@
-
-from loguru import logger
+import re
 import os
-from transformers import pipeline
 import dotenv
+from loguru import logger
+from transformers import pipeline
+from datasets import load_dataset, Dataset
 from datasets import load_dataset
-from pathlib import Path
 
 def checkout():
 
@@ -135,23 +135,65 @@ def init_dataset():
 
     """
         Método para descargar el dataset utilizado.
+
+        Restricciones
+        ----------
+        - Se eliminan id's conflictivos segun pruebas durante el desarrollo
+        - Se eliminan textos que contengan caracteres diferentes a los existentes en el idioma ingles y español.
+        - Se crea un nuevo dataset
+        - Se guarda en local
     
         Retorna
         -------
         None
     """
 
-    logger.warning("Descargando el dataset wikipedia.simple")
+   
+    exclude_ids = {"302157", "367755", "28112", "604881", "789869"}
 
-    dataset = load_dataset("wikipedia", "20220301.simple", cache_dir=datasetFolder, trust_remote_code=True)
 
-    allTexts = dataset["train"]["text"]
+    def is_valid_text(text: str) -> bool:
+        pattern = re.compile(
+            r'^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ'
+            r'\s.,;:!?¿¡()\-]*$'
+        )
+        return bool(pattern.fullmatch(text))
 
-    allSplitedText = list(map(lambda x: x.split("\n")[0], allTexts)) 
 
-    newDataset = dataset["train"].remove_columns(["text"])
-    newDataset = newDataset.add_column("text", allSplitedText)
+    logger.warning("Descargando el dataset para su uso...")
+    dataset = load_dataset("wikipedia", "20220301.simple")["train"]
 
-    newDataset.save_to_disk(datasetFilterFolder)
+   
+    logger.warning("procesando el dataset...")
+    filtered_data = []
+    for example in dataset:
+        # Saltar IDs excluidos
+        if example["id"] in exclude_ids:
+            continue
+        
+        # Procesar texto
+        clean_text = example["text"].split("\n")[0].strip()
+        
+        if clean_text and is_valid_text(clean_text):
+            filtered_data.append({
+                "id": example["id"],
+                "title": example["title"],
+                "text": clean_text
+            })
+
+    logger.warning("Creando el dataset final...")
+
+    clean_dataset = Dataset.from_dict({
+        "id": [x["id"] for x in filtered_data],
+        "title": [x["title"] for x in filtered_data],
+        "text": [x["text"] for x in filtered_data]
+    })
+
+    logger.warning(f"Dataset final guardado en {datasetFilterFolder}")
+
+    logger.success("dataset final guardado exitosamente en local")
+    logger.info(clean_dataset)
+
+    clean_dataset.save_to_disk(datasetFilterFolder)
 
 checkout()

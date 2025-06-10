@@ -38,7 +38,7 @@ async def lessonId( lessonData: VerifyVLResponse = Depends(verify_valid_lesson),
         lessonSplit = lessonData.lessonId.split(":")
 
         _, lessonPostgresId = lessonSplit
-        query ="SELECT l.id AS lesson_id, l.title, l.text, q.id AS question_id, q.question_text, q.answer, q.distractor FROM lessons l CROSS JOIN jsonb_array_elements_text(l.questions_id) AS p(id) JOIN questions q ON q.id = p.id::text WHERE l.id = $1;"
+        query =query = "SELECT l.id AS lesson_id, l.title, l.text, q.id AS question_id, q.question_text, q.answer, q.distractor FROM lessons l JOIN questions q ON q.lesson_id = l.id WHERE l.id = $1;"
 
         questionList =[]
 
@@ -50,6 +50,7 @@ async def lessonId( lessonData: VerifyVLResponse = Depends(verify_valid_lesson),
                 formatedQuestion = LessonWithQuestions(**dict(question))
                 questionList.append(formatedQuestion)
             
+            print(ListLessonWQ(questions=questionList))
             return ListLessonWQ(questions=questionList)
     except Exception as e:
 
@@ -102,7 +103,7 @@ async def get_failed_questions(dbConnect: asyncpg.pool = Depends(get_postgres), 
 
         Retorna
         -------
-        Objeto IncorrectQuestionResponse que la información de la pregunta incorrecta.
+        Objeto IncorrectQuestionResponse que da la información de la pregunta incorrecta.
 
         Excepciones
         -------
@@ -111,11 +112,11 @@ async def get_failed_questions(dbConnect: asyncpg.pool = Depends(get_postgres), 
     """
 
 
-    query = """SELECT l.id AS lesson_id, q.id AS question_id, l.title, l.text, q.question_text, q.answer, q.distractor FROM incorrect_questions iq
-                JOIN questions q ON iq.question_id = q.id JOIN lessons l ON EXISTS ( SELECT 1 FROM 
-                jsonb_array_elements_text(l.questions_id) AS elem WHERE elem = q.id)
-                WHERE iq.user_id = $1 ORDER BY RANDOM() LIMIT 1;
-"""
+    query = """SELECT l.id AS lesson_id, q.id AS question_id, l.title, l.text, q.question_text,
+                q.answer, q.distractor FROM lessons AS l JOIN questions AS q ON q.lesson_id = l.id
+                JOIN registration_questions AS rq ON rq.question_id = q.id WHERE rq.is_correct = FALSE
+                AND rq.user_id = $1 ORDER BY RANDOM() LIMIT 1;
+            """
     try:
 
         async with dbConnect.acquire() as conn:

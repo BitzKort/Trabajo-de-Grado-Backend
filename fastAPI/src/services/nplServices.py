@@ -24,7 +24,7 @@ async def compareAnswer(userCompareData:SentencesCompareEnrty, userId: str ) -> 
 
     try:
 
-        stsb_model = CrossEncoder(model_name_or_path=stsb_path)
+        stsb_model = CrossEncoder(model_name=stsb_path)
 
         predict = str(stsb_model.predict((userCompareData.sentenceNlp, userCompareData.sentenceUser)))
         

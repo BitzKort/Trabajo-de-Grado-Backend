@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from src.repository.dbConection import engine
 from src.schemas.nplSchemas import LessonData, Question
 
-def insert_lesson(lessonData: LessonData, questions_id: list) -> str:
+def insert_lesson(lessonData: LessonData) -> str:
     """
     Inserta una nueva lección y retorna su ID generado.
     El campo questions_id se inicializa con los IDs generados.
@@ -22,8 +22,8 @@ def insert_lesson(lessonData: LessonData, questions_id: list) -> str:
     
     try:
         stmt = text("""
-            INSERT INTO lessons (id, title, text, questions_count, questions_id)
-            VALUES (:id, :title, :text, :questions_count, :questions_id)
+            INSERT INTO lessons (id, title, text, questions_count)
+            VALUES (:id, :title, :text, :questions_count)
         """)
 
         with engine.connect() as conn:
@@ -31,8 +31,7 @@ def insert_lesson(lessonData: LessonData, questions_id: list) -> str:
                 "id": lesson_id,
                 "title": lessonData.title,
                 "text": lessonData.text,
-                "questions_count": len(lessonData.Questions),
-                "questions_id": JSONB().bind_processor(engine.dialect)(questions_id) 
+                "questions_count": len(lessonData.Questions) 
             })
             conn.commit()
 
@@ -42,22 +41,22 @@ def insert_lesson(lessonData: LessonData, questions_id: list) -> str:
 
     return lesson_id
 
-def insert_questions(questions: List[Question]) -> List[str]:
+def insert_questions(questions: List[Question],  lesson_id: str) -> List[str]:
 
     """
     Inserta preguntas y actualiza la lección con los IDs generados.
     
     Retorna 
     -------
-    Lista de IDs de preguntas creadas.
+    None
     """
 
 
     question_ids: List[str] = []
 
     query = text("""
-        INSERT INTO questions (id, question_text, answer, distractor)
-        VALUES (:id, :question_text, :answer, :distractor)
+        INSERT INTO questions (id, question_text, answer, distractor, lesson_id)
+        VALUES (:id, :question_text, :answer, :distractor, :lesson_id)
     """)
 
     try: 
@@ -70,12 +69,11 @@ def insert_questions(questions: List[Question]) -> List[str]:
                     "id": q_id,
                     "question_text": question.question,
                     "answer": question.answer,
-                    "distractor": question.distractor
+                    "distractor": question.distractor,
+                    "lesson_id": lesson_id
                 })
 
             conn.commit()
-
-        return question_ids
     
     except Exception as e:
 
