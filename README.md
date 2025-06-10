@@ -1,4 +1,3 @@
-```markdown
 # Prototipo Web como Soporte para la Enseñanza de Inglés a través de la Gamificación y Algoritmos de Procesamiento del Lenguaje Natural
 
 ## Rama: `main`
@@ -32,4 +31,3 @@ The deployable components are hosted in separate branches:
 
 - The FastAPI server is located in the [`fastapi-server`](https://github.com/BitzKort/Trabajo-de-Grado-Backend/tree/fastapi-server) branch.
 - The Celery project is in the [`celery`](https://github.com/BitzKort/Trabajo-de-Grado-Backend/tree/celery) branch.
-```
