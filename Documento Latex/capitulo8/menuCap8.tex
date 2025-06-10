@@ -1,0 +1,26 @@
+\section{Conclusiones}
+
+De acuerdo con los resultados obtenidos en las encuestas y la síntesis general de la  \autoref{sintesis}, se puede concluir que una estrategia efectiva para mejorar la comprensión oral del inglés en la población bilingüe de Colombia es la integración de herramientas tecnológicas innovadoras que combinen metodologías interactivas y motivadoras con el uso de inteligencia artificial.
+\\
+\\
+Los resultados de las encuestas revelan que los participantes consideran que el desconocimiento del inglés ha obstaculizado su rendimiento académico y sus oportunidades personales. Además, se reconoce el potencial del Procesamiento de Lenguaje Natural (PLN) como catalizador en el proceso de enseñanza-aprendizaje, destacando su capacidad para personalizar la experiencia y mejorar la calidad educativa.
+\\
+\\
+En este contexto, el prototipo web English with Ogloc demostró ser funcional y atractivo para los usuarios. La facilidad de acceso a las lecciones, la claridad de los contenidos generados, y el uso del micrófono como herramienta para practicar la producción oral, son indicios de que un aplicativo web con enfoque en comprensión y producción oral puede ser una solución efectiva. Además, se presentó en el IV Encuentro Regional de Tesistas, donde también tuvo una aceptación positiva por parte del público y de los evaluadores. Adicionalmente, la incorporación de elementos de gamificación contribuyeron a elevar los niveles de motivación y compromiso.
+\\
+\\
+Por tanto, para dar respuesta a la problemática de cómo mejorar la comprensión oral del inglés en Colombia, se recomienda fortalecer el desarrollo e implementación de plataformas que integren tecnologías emergentes, diseños centrados en el usuario y metodologías activas. Esta aproximación permite no solo facilitar la exposición al inglés hablado en contextos diversos, sino también impulsar una práctica constante que refleje el esfuerzo del usuario mediante retroalimentación y recompensas simbólicas. Todo ello apunta a cerrar las brechas existentes y potenciar las competencias comunicativas en inglés dentro de la población bilingüe colombiana.
+
+\newpage
+\section{Trabajos futuros}
+
+Durante el desarrollo del prototipo se lograron identificar diferentes aspectos que complementarían y ayudarían al prototipo web a tener una mejora significativa:
+
+\begin{itemize}
+    \item Implementar un servicio para la funcionalidad de speech-to-text del prototipo. utilizar la librería gratuita Speech Web API lleva consigo a limitar el uso del prototipo a solo 2 navegadores en dispositivos de escritorio, lo cual al utilizar un servicio en la nube (de paga) esta limitación desaparecería, ademas que la calidad de la transcripción tendría una mejora significativa.
+
+    \item Realizar el despliegue del prototipo en un servidor con GPU y una mayor cantidad de memoria RAM, para obtener un menor tiempo de generación de las lecciones, pues los modelos al ser procesados mediante GPU procesan a una mayor velocidad, y al tener mas memoria disponible, mejoraría la concurrencia en Celery.
+
+    \item Realizar un ajuste fino a los modelos implementados con el objetivo de mejorar la generación, y la diversidad de las preguntas, llegando a poder realizar distintos tipos de preguntas o diversificando aun mas el contenido de las lecciones.
+    
+\end{itemize}

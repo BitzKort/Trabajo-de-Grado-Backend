@@ -1,0 +1,89 @@
+\section{Configuración de entornos}
+\subsection{Frontend}
+
+Para la implementación del frontend, se empleó Vite como herramienta principal para la creación y configuración del proyecto, utilizando la plantilla con soporte para TypeScript para garantizar un desarrollo tipado y escalable. El consumo de la API del backend se llevó a cabo mediante Axios, lo cual facilitó la realización de solicitudes HTTP y el manejo eficiente y seguro de las respuestas. Adicionalmente, se integró la librería Web Speech API para habilitar la funcionalidad de speech-to-text, de modo que el usuario pudiera registrar la respuesta seleccionada mediante comandos de voz, contribuyendo así a mejorar su fluidez en el idioma.
+\\
+\\
+No obstante, conviene señalar que la funcionalidad de reconocimiento de voz presenta ciertas limitaciones, dado que el soporte de la Web Speech API varía según el navegador. Google Chrome y Microsoft Edge ofrecen compatibilidad estable, mientras que en el resto de navegadores esta característica no está disponible o muestra un comportamiento inconsistente.
+\\
+\\
+Para enriquecer la experiencia visual e interactiva del prototipo, se incorporó la librería de íconos Lucide, empleada en diversos componentes del proyecto, como los indicadores de días de racha, el medidor de experiencia y el marcador de ranking. Asimismo, se implementó un esquema de Skeleton Theme para ofrecer una interfaz de cargado mientras se espera la respuesta de las peticiones, evitando que el usuario perciba cambios abruptos en la interfaz. Para animaciones se utilizó Framer Motion con el objetivo de dotar de transiciones entre el login y el registro, ademas de las tarjetas de lecciones y otros elementos. Para gestionar el estado y el ciclo de vida de estos componentes, se hizo uso de hooks de React (useState, useEffect, useNavigate y useMemo), controlando variables de estado como el progreso de carga, la visibilidad de animaciones, actualización reactiva de datos provenientes del backend y cambio entre vistas.
+\\
+\\
+En cuanto al diseño de la interfaz, se desarrolló siguiendo principios de responsividad, empleando Tailwind CSS para asegurar una visualización óptima en diferentes dispositivos. Para ello, se utilizaron los puntos de quiebre (breakpoints) que Tailwind proporciona y el sistema de grid para reubicar elementos en función del tamaño de pantalla. El resultado final de la interfaz se amplía con mayor detalle en el capítulo 5.4.
+
+\subsection{Backend API}
+
+Para la implementación del backend se empleó FastAPI junto con Uvicorn como servidor ASGI (Asynchronous Server Gateway Interface), el cual es una interfaz estándar entre servidores web, lo que permitió construir una API escalable y fácil de mantener. La arquitectura adoptada sigue el patrón MVC (Modelo–Vista–Controlador), complementado con capas de repositorios y servicios para garantizar una separación clara de responsabilidades y una organización coherente del código. Por ultimo dentro del servidor se encuentra uno de los modelos de PLN seleccionados, el de comparación de respuestas (cross-encoder/stsb-roberta-base), pues este modelo es necesario para realizar la comparación cada vez que el usuario realiza una petición para saber si la respuesta es correcta o no de acuerdo a la respuesta que genero el modelo anteriormente.
+\\
+\\
+La estructura del backend está compuesta por los siguientes componentes:
+
+\begin{table}[H]
+\begin{center}
+\begin{tabular}{|p{5cm}|p{10cm}|}
+\hline
+\textbf{Componente} & \textbf{Descripción} \\
+\hline
+Modelos & El servidor de fastapi tiene un modelo, el cual es el de comparación de oraciones \texttt{StsbModel}, el cual representa instancias del modelo \texttt{cross-encoder/stsb-roberta-base}. Ademas esta construido con el patrón de diseño singleton para tener solo una instancia y evitar peso innecesario en la memoria.\\
+\hline
+Esquemas & Con el fin de validar y serializar la información que ingresa y sale de la API, se utilizó Pydantic para definir esquemas. Cada esquema describe  la estructura de datos que se acepta en las solicitudes HTTP, y la forma en que el servidor devuelve las respuestas, es decir, como códigos de estado, mensajes de éxito, mensajes de error y resultados de la petición. \\
+\hline
+Routers & Conforman la capa de enrutamiento que expone los endpoints de la API, como \texttt{/updateUser} o \texttt{/AllLessons}. También se define el método HTTP para cada EndPoint (\texttt{GET}, \texttt{POST}, \texttt{PUT}, \texttt{DELETE}). Ademas la mayoría de los endpoint están protegidos por autenticación.  \\
+\hline
+Repositorios & Comunicación directa con las bases de datos. Para la conexión con la base de datos PostgreSQL alojada en NeonDB, se empleó la librería asyncpg, aprovechando su pool de conexiones asíncronas. Ademas se tiene el repositorio dedicado para gestionar la conexión a Redis (utilizando el cliente \texttt{redis.asyncio}). \\
+\hline
+Servicios & Contienen la lógica de negocio, reciben datos ya validados por los \textit{schemas}, invoca al repositorio correspondiente para leer o escribir en la base de datos y finalmente devuelve el resultado formateado al controlador (router) \\
+\hline
+
+\end{tabular}
+  \caption{Estructura del backend}
+\label{fig:estructurabackend}
+\end{center}
+\end{table}
+
+Ademas, se integró la librería Loguru como sistema de registro (logger), con el propósito de detectar información importante en ejecución, de esta forma podemos tener mensajes por consola en distintos niveles (\texttt{INFO}, \texttt{WARNING}, \texttt{ERROR}, \texttt{SUCCESS}).
+\\
+\\
+Se emplearon las librerías \texttt{sentence-transformers} y \texttt{cross-encoders} para cargar y ejecutar un modelo basado en Transformers \texttt{cross-encoder/stsb-roberta-base} el cual, cuando recibe una petición de comparación, genera los embeddings correspondientes y calcula la similitud semántica entre pares de oraciones.
+\\
+\\
+La base de datos principal (PostgreSQL) se configuró usando \texttt{asyncpg} para manejar un pool de conexiones eficiente. Redis se implemento con (\texttt{aioredis}), lo cual optimiza el acceso y evita bloqueos en el ciclo de eventos de Python.
+
+\newpage
+Se implemento la Autenticación de rutas con tokens JWT (JSON Web Tokens) para proteger los endpoints que requieren estar autenticados. Durante el proceso de inicio de sesión o el de registro de usuario, el backend valida las credenciales del usuario (almacenadas en PostgreSQL), genera un token firmado con una clave secreta y lo envía al cliente. A partir de ese momento, cada petición a rutas protegidas debe incluir el token en el encabezado: \texttt{Authorization: Bearer <token>}. Por ultimo el backend valida este token en cada endpoint protegido y extrae el \texttt{user\_id} para autorizar o denegar el acceso.
+
+\subsection{Orquestación de tareas}
+
+La arquitectura implementada utiliza Celery como sistema de gestión de tareas asíncronas, combinado con Redis en un rol dual como broker (intermediario de mensajes) y backend (almacén de resultados). Esta estructura permite a Redis actúar como intermediario de mensajes garantizando entrega tareas.
+\\
+\\
+Se tienen las siguientes características principales del sistema implementado:
+
+\paragraph{Workers} 
+Son procesos especializados que consumen tareas desde el broker, implementados como entidades independientes con capacidades clave tales como:
+\begin{itemize}
+    \item \textbf{Paralelización}: Ejecutan operaciones concurrentes maximizando recursos.
+    \item \textbf{Gestión de estados}: Registran éxitos/fallos mediante backend (Redis).
+\end{itemize}
+
+Se modificaron los siguientes parámetros para poder utilizar los recursos físicos de una buena manera:
+
+\begin{table}[H]
+\begin{center}
+\begin{tabular}{|l|p{5cm}|c|}
+\hline
+\textbf{Parámetro} & \textbf{Función} & \textbf{Valor} \\ \hline
+\texttt{worker\_concurrency} & Limita procesos por worker para evitar sobrecarga & 2 \\ \hline
+\texttt{broker\_pool\_limit} & Controla conexiones simultáneas al broker & 10 \\ \hline
+\texttt{worker\_prefetch\_multiplier} & Cantidad de tareas que un worker reserva antes de procesarlas. & 1 \\ \hline
+\end{tabular}
+  \caption{Parámetros utilizados en Celery}
+  \label{fig:tablero}
+\end{center}
+\end{table}
+
+
+
+\subsection{Integración Celery Beat para tareas periódicas}
+Celery beat opera como servicio desacoplado al igual que el Worker de Celery. La generación automatizada de lecciones se implementó mediante Celery Beat, el cual ejecuta la señal para que celery realice la generación cada cierto periodo de tiempo. Para el prototipo se configuró que cada 30 minutos se ejecute el proceso generate\_lessons.

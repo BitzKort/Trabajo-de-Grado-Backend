@@ -1,0 +1,148 @@
+\documentclass[letterpaper, 11pt, oneside]{report}
+
+\usepackage[utf8]{inputenc} %Para configuración de caracteres
+\usepackage[spanish]{babel} %Para configuración de idioma
+\usepackage{dirtree}
+\usepackage{float} %Para que funcionen las tablas
+\usepackage{anysize} %Para usar márgenes
+\marginsize{2cm}{2cm}{1cm}{2cm} %{izquierda}{derecha}{arriba}{abajo}. La superior esta sobre 1, la derecha sobre -0.5 y la de abajo sobre 2 (por el número de página)
+%tablas
+%tablas
+\usepackage{booktabs}
+\usepackage{longtable}
+%rotar tablas (y usar \includegraphics )
+\usepackage{rotating}
+%Dividir en diagonal
+%\usepackage{slashbox}
+%color tablas
+\usepackage{colortbl}
+%colocar tabla en lugar de cuadro
+
+\usepackage[numbib,notlof,notlot,nottoc]{tocbibind} %Para que la biliografía se llame así y no referencias y para que quede numerada como sección.
+%\usepackage[notlof,notlot,nottoc]{tocbibind} %Bibliografía sin numerar
+\bibliographystyle{ieeetr} %Estilo de bibliografía IEEE
+
+\usepackage{url} % inserción url's notas de pie.
+
+%Para poder colocar texto en color
+\usepackage{color}
+\definecolor{naranja}{rgb}{1,0.5,0} % valores de las componentes roja, verde y azul (RGB)
+\definecolor{rojo}{rgb}{1,0,0}
+\definecolor{SteelBlue}{rgb}{0.3,0.5,0.7}
+
+%Para tener los bookmarks del pdf (menú al lado derecho en los visualizadores de pdf)
+% si colorlinks= true, no salen las cajas, sino el color del link!!
+% linkcolor para los indices, citecolor para las citas en texto, urlcolor para los enlaces
+\usepackage[pdftex,bookmarks=true, linkcolor=black, citecolor=black, colorlinks=true, urlcolor=black]{hyperref}
+
+%Para poder hacer subfiguras (subfloat)
+\usepackage{subfig}
+
+\usepackage{enumitem} % Para poder continuar enumerate en otras partes
+
+\usepackage{pdflscape}%Para colocar páginas horizontales en el PDF
+\usepackage{tikz}
+\usepackage{pgfplots}
+  \pgfplotsset{compat=1.17}
+\usepackage{pgf-pie}      % para el pastel
+\usepackage{filecontents} % si quieres compilar sin archivo externo
+\usetikzlibrary{polar,calc}
+
+\begin{document}
+	
+\renewcommand{\tablename}{Tabla}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Portada %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\thispagestyle{empty}
+\include{capitulo0/Portada}
+%Portada
+\portada
+%Contraportada
+\thispagestyle{empty}
+\contraportada
+\thispagestyle{empty}
+\include{capitulo0/Jurados}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Agradecimientos %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\thispagestyle{empty}
+\include{capitulo0/Agradecimientos}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Tabla de contenido %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\thispagestyle{empty}
+\renewcommand\contentsname{\centering Tabla de Contenido}
+\thispagestyle{empty}
+\tableofcontents
+\vspace{10cm}
+\listoffigures
+\vspace{30cm}
+\renewcommand{\listtablename}{Índice de tablas}
+\listoftables
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Resumen %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\thispagestyle{empty}
+\include{capitulo0/Resumen}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Informacion %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\thispagestyle{empty}
+\include{capitulo0/Informacion}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Capitulo 1 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Introducción}
+\setcounter{page}{1}
+\vspace{-2em}
+\input{capitulo1/menuCap1}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Capitulo 2 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Alcance del proyecto}
+\vspace{-2em}
+\input{capitulo2/Alcance}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Capitulo 3 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Marco referencial}
+\input{capitulo3/MarcoReferencial}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Capitulo 4 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Análisis de Fundamentos}
+\input{capitulo4/menucap4}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Capitulo 5 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Diseño de artefactos}
+\input{capitulo5/menuCap5}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Capitulo 6 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Desarrollo del prototipo web}
+\input{capitulo6/menuCap6}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Capitulo 7 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Pruebas sobre el prototipo}
+\input{capitulo7/menuCap7}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Capitulo 8 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Conclusiones y trabajos futuros}
+\input{capitulo8/menuCap8}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Referencias %%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\bibliographystyle{IEEEtran}            % estilo IEEE
+\nocite{*}
+\bibliography{Bibliografia}           % sin extensión .bib
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Anexos %%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\phantomsection
+\label{Anexos}
+\addcontentsline{toc}{chapter}{Anexos}
+\input{anexos/menuAnexos}
+
+\end{document}

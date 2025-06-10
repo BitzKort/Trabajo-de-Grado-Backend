@@ -1,0 +1,110 @@
+\section{Búsqueda de modelos}
+
+Es importante utilizar los modelos state-of-the-art disponibles actualmente para evitar las limitaciones de tecnologías anteriores. La arquitectura más reciente, los transformadores, incorpora un mecanismo de auto-atención que resuelve muchos de los problemas presentes en otras arquitecturas de redes neuronales. Por ejemplo, las RNN (Recurrent Neural Network) tienen dificultades para mantener el contexto en textos extensos, mientras que los transformadores, gracias a su mecanismo de atención, manejan eficazmente grandes cantidades de texto. Por ende la mejor opción es utilizar un modelo basado en la arquitectura de redes neuronales de transformadores.
+\\
+\\
+En hugginface podemos encontrar múltiples modelos de aprendizaje automático y aprendizaje profundo, de las cuales se tiene un apartado exclusivamente para modelos enfocados al procesamiento de lenguaje natural, esto nos facilita la búsqueda al poder centralizarla en esta amplia biblioteca de modelos libres creados por su comunidad y empresas como Google, nvidia y deepseek, que suben sus modelos de forma gratuita, para uso libre.
+
+\newpage
+\subsection{Generador de texto}
+
+Para el generador de texto en este proyecto, se evaluaron varias versiones del modelo GPT-2 de OpenAI, disponibles en Hugging Face. Se consideraron factores como el tamaño del modelo,la cantidad de parámetros y el valor de la métrica \cite{huggingfacegpt2}.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\hline
+\textbf{Versión} & \textbf{Parámetros (M)} & \textbf{Tamaño Aproximado} & \textbf{Perplejidad en WikiText-2} \\
+\hline
+GPT-2 Small  & 124  & $\sim$548 MB & 29.41 \\
+GPT-2 Medium & 355  & $\sim$1.52 GB & 22.76 \\
+GPT-2 Large  & 774  & $\sim$3.25 GB & 19.93 \\
+GPT-2 XL     & 1558 & $\sim$6.43 GB & 18.34 \\
+\hline
+\end{tabular}
+\caption{Comparativa de versiones de GPT-2 con perplejidad en WikiText-2.}
+Fuente: Metricas de los modelos gpt2 en Hugginface \cite{huggingfacegpt2}.
+\end{table}
+
+WikiText-2 es un conjunto de datos muy utilizado en el campo del procesamiento de lenguaje natural para entrenar y evaluar modelos de procesamiento de lenguaje natural el cual, comúnmente es evaluado con una métrica clave para evaluar los modelos entrenados este conjunto de datos, la perplejidad \cite{huggperplexity}. La perplejidad indica qué tan bien un modelo se ajusta a un conjunto de datos; a menor perplejidad, mejor es la capacidad del modelo para predecir el texto.
+\\
+\\
+Aunque los modelos más grandes de GPT-2 (Medium, Large y XL) ofrecen mejoras en ciertas métricas, estas mejoras no siempre son proporcionales al aumento significativo en tamaño y requerimientos computacionales (los pesos son proporcionados vía Hugging Face). Por ejemplo, GPT-2 Small tiene un tamaño de aproximadamente 548 MB, mientras que GPT-2 Medium y GPT-2 Large requieren 1.52 GB y 3.25 GB respectivamente.
+\\
+\\
+En términos de rendimiento, GPT-2 Small logra una perplejidad de aproximadamente 29.41 en el conjunto de datos WikiText-2, lo que indica una capacidad razonable para modelar el lenguaje. Aunque los modelos más grandes pueden mejorar esta métrica, el incremento de la calidad de la generación de texto no justifica el aumento en recursos necesarios para su correcta implementación, especialmente en entornos con limitaciones de hardware, como es el caso en este proyecto.
+
+
+\subsection{Generadores de pregunta y respuestas}
+
+En el contexto de este proyecto, se optó por utilizar los modelos de Potsawee Manakul \cite{manakul2023} doctor en Ingeniería por la Universidad de Cambridge, especializado en Procesamiento de Lenguaje Natural (NLP), debido a su capacidad para generar tanto preguntas como respuestas a partir de un único modelo, lo que permite una implementación más eficiente al evitar la necesidad de modelos separados para cada tarea, lo cual gana ante los demás modelos de generación de preguntas y respuestas presentes en hugginface.
+
+\subsubsection {Modelo entrenado con SQuAD} Este modelo es el t5-large-generation-race-QuestionAnswer, el cual genera preguntas y respuestas de tipo extractivo, es decir, las respuestas se encuentran directamente en el texto de entrada \cite{potsaweesquad}. es decir solo referirse en donde lo puede encontrar, esto para todo de anexos.
+
+\subsubsection {Modelo entrenado con RACE} El t5-large-generation-squad-QuestionAnswer produce preguntas y respuestas de tipo abstractivo, donde las respuestas pueden ser re-formulaciones o inferencias basadas en el texto de entrada \cite{potsaweerace}.
+
+\subsubsection {Modelo de preguntas incorrectas}
+El modelo de generación de respuestas incorrectas es el t5-large-generation-race-Distractor, el cual se integra al sistema de generación de preguntas y respuestas para ambos modelos. Su propósito es generar opciones de respuesta incorrectas que sean plausibles y coherentes con el contexto, lo que enriquece la experiencia de aprendizaje al fomentar una evaluación más efectiva de la comprensión del usuario \cite{potsaweedistractor}.
+\\
+\\
+La elección de optar por el uso de dos modelos especializados (uno entrenado con SQuAD para preguntas extractivas y otro con RACE para preguntas abstractivas) responde a una estrategia orientada a ofrecer al usuario del prototipo dos tipos de preguntas: extractivas y abstractivas. Esta dualidad permite enriquecer la experiencia de aprendizaje al presentar tanto preguntas cuyas respuestas están directamente en el texto como aquellas que requieren inferencia o re-formulación ademas, esta elección optimiza tanto el uso de recursos computacionales como el flujo de trabajo en la implementación del sistema.
+
+
+\subsection{Modelo de comparación de oraciones}
+
+Para evaluar la precisión de las respuestas proporcionadas por los usuarios en las lecciones, donde se presentan dos opciones, correcta e incorrecta, se implementó el modelo cross-encoder/stsb-roberta-base. Este modelo, basado en la arquitectura RoBERTa, fue entrenado en el conjunto de datos STS Benchmark para predecir la similitud semántica entre pares de oraciones, asignando puntuaciones entre 0 y 1. \cite{stsbrobertabase} Su elección se fundamenta en su alto rendimiento en tareas de similitud textual. Además, al procesar simultáneamente los pares de oraciones, el modelo captura de manera más precisa las relaciones semánticas entre la respuesta del usuario y la respuesta correcta generada por el sistema, facilitando una evaluación efectiva.
+
+\newpage
+\section{Elementos seleccionados}
+
+A continuación se sintetizan los componentes y enfoques finalmente adoptados en cada una de las etapas de este capitulo:
+
+\begin{itemize}
+  \item \textbf{Temas de ingles según MCER}:
+    \section*{Nivel A2}  
+        \begin{itemize}
+            \item Artículos.
+            \item Adjetivos.
+            \item Adverbios de frecuencia.
+            \item Comparativos y superlativos.
+            \item Pronombres.
+            \item Tiempos verbales.
+        \end{itemize}
+
+
+    \section*{Nivel B1}
+    
+    \begin{itemize}
+        \item Adjetivos gradables y no gradables.
+        \item Uso de mayúsculas y apóstrofes.
+        \item Tiempos verbales.
+        \item Voz pasiva.
+        \item Condicionales.
+        \item verbos frasales (phrasal verbs).
+    \end{itemize}
+
+  \item \textbf{Enfoque metodológico}:  
+    \begin{itemize}
+      \item Metodología bleended learning combinado con técnicas de gamificación.
+    \end{itemize}
+
+  \item \textbf{Técnicas de gamificación seleccionadas}:  
+    \begin{itemize}
+      \item Puntos de experiencia (XP).  
+      \item Insignias.  
+      \item Días de racha (streak).  
+      \item Ranking de jugadores.
+    \end{itemize}
+
+  \item \textbf{Modelos de PLN preseleccionados}:  
+    \begin{itemize}
+      \item Generación de texto: \texttt{GPT-2 Small}.  
+      \item Preguntas y respuestas:  
+        \begin{itemize}
+          \item Modelo extractivo: \texttt{t5-large-generation-race-QuestionAnswer}
+          \item Modelo abstractivo: \texttt{t5-large-generation-squad-QuestionAnswer}
+          \item Generador de respuestas incorrectas: \texttt{t5-large-generation-race-Distractor}
+        \end{itemize}
+      \item Evaluación de similitud de oraciones: \texttt{cross-encoder/stsb-roberta-base}.
+    \end{itemize}
+\end{itemize}

@@ -1,0 +1,101 @@
+\subsection{Tecnologías seleccionadas}
+\noindent Hoy en d\'ia, el ecosistema de herramientas y marcos de trabajo para el desarrollo web es muy amplio, abarcando desde bibliotecas para la interfaz de usuario hasta soluciones para el backend y la gesti\'on de tareas en segundo plano. A continuación se tienen diferentes tablas con algunas de las tecnologías mas destacadas para cada uno de los componentes que comprende la arquitectura el prototipo web.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|p{10cm}|}
+\hline
+\textbf{Tecnología Frontend} & \textbf{Descripción} \\
+\hline
+Vue.js & Simplicidad y facilidad de integración, ideal para proyectos ligeros y rápidos de desarrollar. \\
+\hline
+Angular & Respaldado por Google, con una arquitectura robusta pensada para aplicaciones empresariales de gran escala. \\
+\hline
+Svelte & Enfoque innovador al compilar sus componentes en JavaScript puro, eliminando el uso del DOM virtual y logrando un mejor rendimiento. \\
+\hline
+React & Gran versatilidad, integración natural con TypeScript y Tailwind CSS. Arquitectura basada en componentes re-utilizables y escalables. \\
+\hline
+\end{tabular}
+\caption{Tecnologías destacadas para el desarrollo frontend}
+\end{table}
+
+\noindent Con base en estas características, se seleccionó React como la tecnología más conveniente y eficiente para el desarrollo de la interfaz de usuario del prototipo.
+\\
+\\
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|p{10cm}|}
+\hline
+\textbf{Tecnología API Backend} & \textbf{Descripción} \\
+\hline
+Django & Conocido por su robustez, seguridad y rapidez de desarrollo. \\
+\hline
+Flask & Ideal para aplicaciones más pequeñas o que requieren mayor flexibilidad. \\
+\hline
+Node.js & Basado en JavaScript, permite usar un mismo lenguaje tanto en el frontend como en el backend, promoviendo la uniformidad en el desarrollo. \\
+\hline
+FastAPI & Ligero y eficiente. Utiliza tipado estático para mejorar la claridad y documentación de las APIs, facilitando la integración con servicios externos.\\
+\hline
+\end{tabular}
+\caption{Tecnologías destacadas para el desarrollo backend}
+\end{table}
+
+\noindent Por su eficiencia, facilidad de uso y moderna arquitectura, FastAPI fue seleccionada como la opción ideal para el desarrollo del backend del prototipo.
+\\
+\\
+En el desarrollo de aplicaciones web modernas, contar con un sistema para la gestión de tareas en segundo plano resulta  beneficioso, especialmente cuando se ejecutan procesos intensivos como aquellos relacionados con modelos de inteligencia artificial. Este tipo de soluciones permite liberar al servidor principal de operaciones pesadas, lo cual evita bloqueos o lentitud en la atención de las solicitudes y garantiza una experiencia de usuario más fluida y eficiente. En el caso del presente proyecto, esta necesidad se vuelve aún más relevante al momento de generar lecciones que requieren procesamiento con modelos de IA, lo cual podría afectar negativamente el rendimiento general del sistema. 
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|p{10cm}|}
+\hline
+\textbf{Tecnología } & \textbf{Descripción} \\
+\hline
+RQ & Herramienta sencilla para gestionar tareas en segundo plano utilizando Redis como sistema de cola. \\
+\hline
+Dramatiq & Sistema de colas basado en Python, conocido por su buen rendimiento y facilidad de uso. \\
+\hline
+Celery & Herramienta madura, compatible con distintos brokers de mensajes y altamente configurable. Se pueden programar tareas periódicas (Celery Beat). \\
+\hline
+\end{tabular}
+\caption{Tecnologías destacadas para la gestión de tareas en segundo plano}
+
+\end{table}
+
+\noindent Dado el contexto del proyecto y la necesidad de procesar tareas intensivas como la generación de lecciones con modelos de IA, se eligió Celery junto con Celery Beat por su robustez y flexibilidad.
+\\
+\\
+En lo que respecta a la gestión de bases de datos dentro del desarrollo del prototipo, se optó por utilizar PostgreSQL y Redis. Esta elección se basa principalmente en la familiaridad previa con estas herramientas, así como en el hecho de que la lógica de integración y manipulación de datos no difiere significativamente entre tecnologías similares, lo que permite enfocar los esfuerzos en otros aspectos más críticos del sistema.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{3cm}|p{9cm}|}
+\hline
+\textbf{Tecnología} & \textbf{Descripción} \\
+\hline
+PostgreSQL & Sistema de gestión de bases de datos relacional, conocido por su estabilidad, conformidad con estándares SQL y capacidades avanzadas como el manejo de tipos de datos complejos y extensiones. \\
+\hline
+Redis & Almacén de datos en memoria, basado en estructuras clave-valor, ideal para operaciones rápidas y uso como sistema de caché o base de datos secundaria para tareas de alta concurrencia. \\
+\hline
+\end{tabular}
+\caption{Tecnologías utilizadas para la gestión de bases de datos}
+\end{table}
+
+
+Teniendo en cuenta lo anterior se presentan las tecnologías seleccionadas para cada componente de la arquitectura.
+
+
+\begin{itemize}
+    \item \textbf{Frontend:} Implementado con React, TypeScript y Tailwind CSS. Este componente se encarga de la interfaz de usuario, permitiendo la interacci\'on del usuario con las lecciones, preguntas y resultados.
+    
+    \item \textbf{Backend (API):} Utiliza FastAPI para gestionar las peticiones provenientes del frontend. Este servidor maneja la autenticación, el enrutamiento y la comunicación con la base de datos, así como con los servicios asíncronos. Internamente, sigue una arquitectura basada en el patrón Modelo-Vista-Controlador (MVC).
+    
+    \item \textbf{Gestión de tareas (as\'incrono):} Se apoya en Celery y Celery Beat para procesar tareas de forma peri\'odica. Este servicio trabaja de forma desacoplada del servidor principal, permitiendo la escalabilidad del sistema.
+
+    \item \textbf{Base de datos NoSQL:} Redis sirve como sistema de almacenamiento en memoria para consultas r\'apidas, evitando el acceso constante a la base de datos. Ademas, Redis se utiliza como el brocker y backend para la cola de tareas en celery, siendo en el index 0 broker y en el indice 1 backend (es decir, donde guarda los estados de las tareas y sus resultados).
+
+    \item \textbf{Base de datos SQL:} Se utiliza PostgreSQL alojado en NeonDB. Esta base de datos almacena toda la informaci\'on relevante del sistema, incluyendo usuarios, rachas, lecciones y preguntas incorrectas.
+\end{itemize}
+
+\noindent Esta arquitectura permite una separaci\'on clara de responsabilidades, facilita la escalabilidad del sistema distribuye las cargas entre procesos sincr\'onos y as\'incronos.
+
